@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-info { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { margin: 5px; padding: 10px; }
+        #log { background: #000; color: #0f0; padding: 10px; height: 300px; overflow-y: scroll; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Chess Multiplayer Debug</h1>
+    
+    <div class="debug-info">
+        <h3>Connection Status</h3>
+        <div id="connection-status">Disconnected</div>
+        <div id="game-status">No game</div>
+        <div id="player-info">Not assigned</div>
+    </div>
+
+    <div class="debug-info">
+        <h3>Controls</h3>
+        <button onclick="createGame()">Create Game</button>
+        <button onclick="joinGame()">Join Game</button>
+        <button onclick="testMove()">Test Move</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="debug-info">
+        <h3>Game Info</h3>
+        <div>Team Code: <span id="team-code">None</span></div>
+        <div>Player Color: <span id="player-color">None</span></div>
+        <div>Current Turn: <span id="current-turn">None</span></div>
+    </div>
+
+    <div id="log"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = null;
+        let teamCode = null;
+        let playerColor = null;
+        let currentTurn = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#74c0fc';
+            logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function updateStatus() {
+            document.getElementById('connection-status').textContent = socket ? 'Connected' : 'Disconnected';
+            document.getElementById('team-code').textContent = teamCode || 'None';
+            document.getElementById('player-color').textContent = playerColor || 'None';
+            document.getElementById('current-turn').textContent = currentTurn || 'None';
+        }
+
+        function createGame() {
+            const playerName = prompt('Enter your name:');
+            if (playerName) {
+                log(`Creating game as ${playerName}`, 'info');
+                socket.emit('createGame', playerName);
+            }
+        }
+
+        function joinGame() {
+            const teamCode = prompt('Enter team code:');
+            const playerName = prompt('Enter your name:');
+            if (teamCode && playerName) {
+                log(`Joining game ${teamCode} as ${playerName}`, 'info');
+                socket.emit('joinGame', { teamCode, playerName });
+            }
+        }
+
+        function testMove() {
+            if (!teamCode) {
+                log('No game active', 'error');
+                return;
+            }
+            log('Testing move: e2 to e4', 'info');
+            socket.emit('makeMove', { fromRow: 6, fromCol: 4, toRow: 4, toCol: 4 });
+        }
+
+        // Initialize Socket.IO
+        socket = io();
+
+        socket.on('connect', () => {
+            log('Connected to server', 'success');
+            updateStatus();
+        });
+
+        socket.on('disconnect', () => {
+            log('Disconnected from server', 'error');
+            updateStatus();
+        });
+
+        socket.on('gameCreated', (data) => {
+            log(`Game created: ${JSON.stringify(data)}`, 'success');
+            teamCode = data.teamCode;
+            playerColor = data.playerColor;
+            updateStatus();
+        });
+
+        socket.on('gameReady', (data) => {
+            log(`Game ready: ${JSON.stringify(data)}`, 'success');
+            currentTurn = data.currentPlayer;
+            updateStatus();
+        });
+
+        socket.on('moveMade', (data) => {
+            log(`Move made: ${JSON.stringify(data)}`, 'success');
+            currentTurn = data.currentPlayer;
+            updateStatus();
+        });
+
+        socket.on('playerLeft', (data) => {
+            log(`Player left: ${JSON.stringify(data)}`, 'error');
+        });
+
+        socket.on('joinError', (message) => {
+            log(`Join error: ${message}`, 'error');
+        });
+
+        // Log all socket events for debugging
+        const originalEmit = socket.emit;
+        socket.emit = function(event, ...args) {
+            log(`Emitting: ${event} - ${JSON.stringify(args)}`, 'info');
+            return originalEmit.apply(this, [event, ...args]);
+        };
+
+        updateStatus();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#667eea">
+    <title>ChessVoice - Multiplayer Chess</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 3D Animation Intro Screen -->
+    <div id="intro-screen" class="intro-screen">
+        <div class="intro-content">
+            <div class="chess-logo">
+                <div class="logo-text">ChessVoice</div>
+                <div class="logo-subtitle">Multiplayer Chess with Voice & Chat</div>
+            </div>
+            <div class="chess-pieces-3d">
+                <div class="piece-3d king-3d">♔</div>
+                <div class="piece-3d queen-3d">♕</div>
+                <div class="piece-3d rook-3d">♖</div>
+                <div class="piece-3d bishop-3d">♗</div>
+                <div class="piece-3d knight-3d">♘</div>
+                <div class="piece-3d pawn-3d">♙</div>
+            </div>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+            <div class="loading-text">Loading ChessVoice...</div>
+        </div>
+    </div>
+
+    <!-- Authentication Section -->
+    <div id="auth-section" class="auth-section" style="display: none;">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>ChessVoice</h1>
+                <p>Sign in to play multiplayer chess</p>
+            </div>
+            
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form">
+                <h2>Sign In</h2>
+                <form id="login-form-element">
+                    <div class="form-group">
+                        <label for="login-identifier">Email, Phone, or Username</label>
+                        <input type="text" id="login-identifier" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <div style="position:relative;">
+                            <input type="password" id="login-password" required>
+                            <button type="button" id="toggle-login-password" class="password-toggle-btn">👁️</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="auth-btn">Sign In</button>
+                </form>
+                <div class="auth-links">
+                    <a href="#" id="forgot-password-link">Forgot Password?</a>
+                    <a href="#" id="show-signup-link">Don't have an account? Sign up</a>
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signup-form" class="auth-form" style="display: none;">
+                <h2>Create Account</h2>
+                <form id="signup-form-element">
+                    <div class="form-group">
+                        <label for="signup-username">Username</label>
+                        <input type="text" id="signup-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Email (optional)</label>
+                        <input type="email" id="signup-email">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-phone">Phone Number (optional)</label>
+                        <input type="tel" id="signup-phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-gender">Gender</label>
+                        <select id="signup-gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                            <option value="prefer-not-to-say">Prefer not to say</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Profile Avatar</label>
+                        <div class="avatar-selection">
+                            <div class="avatar-option" data-avatar="👤">
+                                <span class="avatar-icon">👤</span>
+                                <span class="avatar-label">Default</span>
+                            </div>
+                            <div class="avatar-option" data-avatar="👨">
+                                <span class="avatar-icon">👨</span>
+                                <span class="avatar-label">Male</span>
+                            </div>
+                            <div class="avatar-option" data-avatar="👩">
+                                <span class="avatar-icon">👩</span>
+                                <span class="avatar-label">Female</span>
+                            </div>
+                            <div class="avatar-option" data-avatar="🧑">
+                                <span class="avatar-icon">🧑</span>
+                                <span class="avatar-label">Person</span>
+                            </div>
+                            <div class="avatar-option" data-avatar="🎮">
+                                <span class="avatar-icon">🎮</span>
+                                <span class="avatar-label">Gamer</span>
+                            </div>
+                            <div class="avatar-option" data-avatar="👑">
+                                <span class="avatar-icon">👑</span>
+                                <span class="avatar-label">King</span>
+                            </div>
+                            <div class="avatar-option" data-avatar="👸">
+                                <span class="avatar-icon">👸</span>
+                                <span class="avatar-label">Queen</span>
+                            </div>
+                            <div class="avatar-option" data-avatar="🤖">
+                                <span class="avatar-icon">🤖</span>
+                                <span class="avatar-label">Robot</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="signup-avatar" value="👤">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <div style="position:relative;">
+                            <input type="password" id="signup-password" required>
+                            <button type="button" class="toggle-password password-toggle-btn" data-target="signup-password">👁️</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-confirm-password">Confirm Password</label>
+                        <div style="position:relative;">
+                            <input type="password" id="signup-confirm-password" required>
+                            <button type="button" class="toggle-password password-toggle-btn" data-target="signup-confirm-password">👁️</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="auth-btn">Create Account</button>
+                </form>
+                <div class="auth-links">
+                    <a href="#" id="show-login-link">Already have an account? Sign in</a>
+                </div>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgot-password-form" class="auth-form" style="display: none;">
+                <h2>Reset Password</h2>
+                <form id="forgot-password-form-element">
+                    <div class="form-group">
+                        <label for="reset-identifier">Email, Phone, or Username</label>
+                        <input type="text" id="reset-identifier" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reset-method">Send code via:</label>
+                        <select id="reset-method">
+                            <option value="">Auto-detect</option>
+                            <option value="email">Email</option>
+                            <option value="sms">SMS</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="auth-btn">Send Reset Code</button>
+                </form>
+                <div class="auth-links">
+                    <a href="#" id="back-to-login-link">Back to Sign In</a>
+                </div>
+            </div>
+
+            <!-- Reset Password Form -->
+            <div id="reset-password-form" class="auth-form" style="display: none;">
+                <h2>Enter Reset Code</h2>
+                <form id="reset-password-form-element">
+                    <div class="form-group">
+                        <label for="reset-code">Reset Code</label>
+                        <input type="text" id="reset-code" placeholder="Enter 6-digit code" maxlength="6" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <div style="position:relative;">
+                            <input type="password" id="new-password" required>
+                            <button type="button" class="toggle-password password-toggle-btn" data-target="new-password">👁️</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-new-password">Confirm New Password</label>
+                        <div style="position:relative;">
+                            <input type="password" id="confirm-new-password" required>
+                            <button type="button" class="toggle-password password-toggle-btn" data-target="confirm-new-password">👁️</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="auth-btn">Reset Password</button>
+                </form>
+                <div class="auth-links">
+                    <a href="#" id="back-to-forgot-link">Back to Forgot Password</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Info Modal -->
+    <div id="update-info-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-update-info-modal">&times;</span>
+            <h2>Update Account Info</h2>
+            <form id="update-info-form">
+                <div class="form-group">
+                    <label for="update-username">New Username</label>
+                    <input type="text" id="update-username" placeholder="Enter new username">
+                </div>
+                <div class="form-group">
+                    <label for="update-email">New Email</label>
+                    <input type="email" id="update-email" placeholder="Enter new email">
+                </div>
+                <div class="form-group">
+                    <label for="update-phone">New Phone Number</label>
+                    <input type="tel" id="update-phone" placeholder="Enter new phone number">
+                </div>
+                <div class="form-group">
+                    <label for="update-profile-picture">Profile Picture</label>
+                    <input type="file" id="update-profile-picture" accept="image/*">
+                </div>
+                <button type="submit" class="auth-btn">Update Info</button>
+                <div id="update-info-message" style="margin-top:10px;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-change-password-modal">&times;</span>
+            <h2>Change Password</h2>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="current-password">Current Password</label>
+                    <div style="position:relative;">
+                        <input type="password" id="current-password" required>
+                        <button type="button" class="toggle-password password-toggle-btn" data-target="current-password">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">New Password</label>
+                    <div style="position:relative;">
+                        <input type="password" id="new-password" required>
+                        <button type="button" class="toggle-password password-toggle-btn" data-target="new-password">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-new-password">Confirm New Password</label>
+                    <div style="position:relative;">
+                        <input type="password" id="confirm-new-password" required>
+                        <button type="button" class="toggle-password password-toggle-btn" data-target="confirm-new-password">👁️</button>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn">Change Password</button>
+                <div id="change-password-message" style="margin-top:10px;"></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container" id="game-container" style="display: none;">
+        <header>
+            <div class="header-content">
+                <h1>ChessVoice</h1>
+                <div class="user-profile" id="user-profile">
+                    <img id="user-avatar" src="/default-avatar.png" alt="Profile Picture" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-right:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                    <div class="user-info">
+                        <span id="user-username"></span>
+                        <div class="user-stats">
+                            <span id="user-rating"></span>
+                            <span id="user-record"></span>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+            <div class="game-info">
+                <div class="turn-indicator">
+                    <span>Current Turn: </span>
+                    <span id="current-turn">White</span>
+                </div>
+                <div class="game-status">
+                    <span id="game-status">Game in progress</span>
+                </div>
+                <div class="multiplayer-status" id="multiplayer-status" style="display: none;">
+                    <span id="connection-status">Connected</span>
+                    <span id="player-role"></span>
+                </div>
+            </div>
+        </header>
+        
+        <main>
+            <div class="chess-board" id="chess-board"></div>
+            <div class="move-history">
+                <h3>Move History</h3>
+                <div id="move-list"></div>
+            </div>
+        </main>
+        
+        <!-- Chat Section -->
+        <div class="chat-section" id="chat-section" style="display: none;">
+            <div class="chat-header">
+                <h3>Game Chat</h3>
+                <span id="chat-status">Connected</span>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Chat messages will appear here -->
+            </div>
+            <div class="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Type your message..." maxlength="200">
+                <button id="emoji-btn" title="Add emoji">😊</button>
+                <button id="send-message-btn">Send</button>
+            </div>
+            <div class="emoji-picker" id="emoji-picker" style="display: none;">
+                <!-- Emoji picker content will be generated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="random-search-stats" id="random-search-stats" style="margin-bottom: 10px; font-size: 1rem; color: #667eea; text-align: center; font-weight: 600;">
+              <span id="random-search-count">0</span> players searching for a random match
+            </div>
+            <button id="new-game-btn">New Game</button>
+            
+            <!-- Multiplayer Controls -->
+            <div class="multiplayer-controls">
+                <button id="create-game-btn">Create Online Game</button>
+                <button id="join-game-btn">Join Game</button>
+                <button id="random-match-btn">Find Random Opponent</button>
+                <button id="leave-game-btn" style="display: none;">Leave Game</button>
+                <!-- Voice Chat Controls -->
+                <button id="start-voice-btn" style="display: none;">Start Voice Chat</button>
+                <button id="mute-voice-btn" style="display: none;">Mute</button>
+                <!-- Video Chat Controls -->
+                <button id="start-video-btn" style="display: none;">Start Video Chat</button>
+                <button id="hangup-video-btn" style="display: none;">Hang Up</button>
+            </div>
+            
+            <!-- Team Code Display -->
+            <div class="team-code-section" id="team-code-section" style="display: none;">
+                <h4>Share this code with your friend:</h4>
+                <div class="team-code-display">
+                    <span id="team-code"></span>
+                    <button id="copy-code-btn">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Join Game Modal -->
+    <div id="join-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Join Online Game</h2>
+            <form id="join-form">
+                <div class="form-group">
+                    <label for="team-code-input">Enter Team Code:</label>
+                    <input type="text" id="team-code-input" placeholder="Enter 6-digit code" maxlength="6" required>
+                </div>
+                <button type="submit">Join Game</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Random Match Modal -->
+    <div id="random-match-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Find Random Opponent</h2>
+            <div class="match-preferences">
+                <div class="form-group">
+                    <label>Opponent Gender Preference:</label>
+                    <div class="gender-preference-options">
+                        <label class="radio-option">
+                            <input type="radio" name="gender-preference" value="any" checked>
+                            <span class="radio-label">Any Gender</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="gender-preference" value="opposite">
+                            <span class="radio-label">Opposite Gender</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="gender-preference" value="same">
+                            <span class="radio-label">Same Gender</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Skill Level Range:</label>
+                    <select id="skill-range">
+                        <option value="any">Any Skill Level</option>
+                        <option value="beginner">Beginner (800-1200)</option>
+                        <option value="intermediate">Intermediate (1200-1600)</option>
+                        <option value="advanced">Advanced (1600+)</option>
+                    </select>
+                </div>
+                <div class="matchmaking-stats" id="matchmaking-stats" style="display: none;">
+                    <div class="stats-info">
+                        <p><strong>Currently searching:</strong> <span id="searching-count">0</span> players</p>
+                        <p><strong>By gender:</strong> <span id="male-count">0</span> male, <span id="female-count">0</span> female, <span id="other-count">0</span> other</p>
+                    </div>
+                </div>
+            </div>
+            <div class="match-status" id="match-status" style="display: none;">
+                <div class="searching-animation">
+                    <div class="spinner"></div>
+                    <p>Searching for opponent...</p>
+                </div>
+                <div class="match-info" id="match-info" style="display: none;">
+                    <p><strong>Found opponent:</strong> <span id="opponent-name"></span></p>
+                    <p><strong>Rating:</strong> <span id="opponent-rating"></span></p>
+                    <p><strong>Gender:</strong> <span id="opponent-gender"></span></p>
+                    <div class="connect-options">
+                        <button id="connect-to-opponent" class="connect-btn">Connect & Start Game</button>
+                        <button id="decline-match" class="decline-btn">Decline Match</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="start-random-match" class="primary-btn">Start Searching</button>
+                <button id="cancel-random-match" class="secondary-btn" style="display: none;">Cancel Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Request Modal -->
+    <div id="connection-request-modal" class="modal">
+        <div class="modal-content">
+            <h2>Connection Request</h2>
+            <div class="connection-request-info">
+                <p><strong><span id="requesting-player-name"></span></strong> wants to connect and start a game with you!</p>
+                <div class="player-details">
+                    <p><strong>Rating:</strong> <span id="requesting-player-rating"></span></p>
+                    <p><strong>Gender:</strong> <span id="requesting-player-gender"></span></p>
+                </div>
+                <div class="connection-options">
+                    <button id="accept-connection" class="connect-btn">Accept & Start Game</button>
+                    <button id="reject-connection" class="decline-btn">Decline</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Request Modal -->
+    <div id="approval-request-modal" class="modal">
+        <div class="modal-content">
+            <h2>Start Game Request</h2>
+            <div class="approval-request-info">
+                <p><strong><span id="approval-player-name"></span></strong> wants to start the game now!</p>
+                <div class="player-details">
+                    <p><strong>Rating:</strong> <span id="approval-player-rating"></span></p>
+                    <p><strong>Gender:</strong> <span id="approval-player-gender"></span></p>
+                </div>
+                <div class="approval-options">
+                    <button id="approve-game" class="connect-btn">Approve & Start</button>
+                    <button id="decline-game" class="decline-btn">Decline</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkmate Modal -->
+    <div id="checkmate-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="checkmate-title">Game Over!</h2>
+            <p id="checkmate-message"></p>
+            <div class="modal-buttons">
+                <button id="view-final-position-btn">View Final Position</button>
+                <button id="new-game-after-checkmate">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="video-chat-section" class="video-glass-card" style="display:none;">
+        <div class="video-area">
+            <video id="remote-video" autoplay playsinline class="remote-video"></video>
+            <video id="local-video" autoplay muted playsinline class="local-video"></video>
+        </div>
+        <div class="video-controls">
+            <button id="start-video-btn" class="video-btn gradient-btn"><span class="video-icon">🎥</span> Start Video Chat</button>
+            <button id="hangup-video-btn" class="video-btn hangup-btn gradient-btn"><span class="video-icon">⏹️</span> Hang Up</button>
+        </div>
+    </div>
+
+    <!-- Chess Piece and Sound Assets -->
+    <audio id="move-sound" src="assets/sounds/move.mp3" preload="auto"></audio>
+    <audio id="capture-sound" src="assets/sounds/capture.mp3" preload="auto"></audio>
+    <audio id="check-sound" src="assets/sounds/check.mp3" preload="auto"></audio>
+    <audio id="checkmate-sound" src="assets/sounds/checkmate.mp3" preload="auto"></audio>
+    <audio id="game-start-sound" src="assets/sounds/game_start.mp3" preload="auto"></audio>
+    <audio id="game-end-sound" src="assets/sounds/game_end.mp3" preload="auto"></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="chess.js"></script>
+</body>
+</html> 

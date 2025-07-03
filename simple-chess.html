@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chess Multiplayer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chess-board { 
+            display: grid; 
+            grid-template-columns: repeat(8, 1fr); 
+            width: 400px; 
+            height: 400px; 
+            border: 2px solid #333; 
+            margin: 20px 0; 
+        }
+        .square { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 30px; 
+            cursor: pointer; 
+            border: 1px solid #ccc; 
+        }
+        .square.light { background-color: #f0d9b5; }
+        .square.dark { background-color: #b58863; }
+        .square.selected { background-color: #3498db !important; color: white; }
+        .square.valid { background-color: #2ecc71 !important; color: white; }
+        .controls { margin: 20px 0; }
+        .status { 
+            background: #f0f0f0; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+        }
+        button { margin: 5px; padding: 10px; }
+        #log { 
+            background: #000; 
+            color: #0f0; 
+            padding: 10px; 
+            height: 200px; 
+            overflow-y: scroll; 
+            font-family: monospace; 
+            font-size: 12px; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Chess Multiplayer Test</h1>
+    
+    <div class="status">
+        <div>Connection: <span id="connection">Disconnected</span></div>
+        <div>Game: <span id="game-status">No game</span></div>
+        <div>You are: <span id="player-color">None</span></div>
+        <div>Current turn: <span id="current-turn">None</span></div>
+    </div>
+
+    <div class="controls">
+        <button onclick="createGame()">Create Game</button>
+        <button onclick="joinGame()">Join Game</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div id="chess-board" class="chess-board"></div>
+    
+    <div id="log"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket = null;
+        let board = [];
+        let selectedSquare = null;
+        let teamCode = null;
+        let playerColor = null;
+        let currentTurn = 'white';
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#74c0fc';
+            logDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function updateStatus() {
+            document.getElementById('connection').textContent = socket ? 'Connected' : 'Disconnected';
+            document.getElementById('game-status').textContent = teamCode ? `Game ${teamCode}` : 'No game';
+            document.getElementById('player-color').textContent = playerColor || 'None';
+            document.getElementById('current-turn').textContent = currentTurn || 'None';
+        }
+
+        function initializeBoard() {
+            board = [];
+            for (let row = 0; row < 8; row++) {
+                board[row] = [];
+                for (let col = 0; col < 8; col++) {
+                    board[row][col] = null;
+                }
+            }
+
+            // Set up pawns
+            for (let col = 0; col < 8; col++) {
+                board[1][col] = { type: 'pawn', color: 'black' };
+                board[6][col] = { type: 'pawn', color: 'white' };
+            }
+
+            // Set up other pieces
+            const pieces = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
+            for (let col = 0; col < 8; col++) {
+                board[0][col] = { type: pieces[col], color: 'black' };
+                board[7][col] = { type: pieces[col], color: 'white' };
+            }
+        }
+
+        function renderBoard() {
+            const chessBoard = document.getElementById('chess-board');
+            chessBoard.innerHTML = '';
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = `square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+
+                    const piece = board[row][col];
+                    if (piece) {
+                        const symbol = getPieceSymbol(piece);
+                        square.textContent = symbol;
+                        square.style.color = piece.color === 'white' ? '#fff' : '#000';
+                    }
+
+                    square.addEventListener('click', () => handleSquareClick(row, col));
+                    chessBoard.appendChild(square);
+                }
+            }
+        }
+
+        function getPieceSymbol(piece) {
+            const symbols = {
+                'white': { 'king': '♔', 'queen': '♕', 'rook': '♖', 'bishop': '♗', 'knight': '♘', 'pawn': '♙' },
+                'black': { 'king': '♚', 'queen': '♛', 'rook': '♜', 'bishop': '♝', 'knight': '♞', 'pawn': '♟' }
+            };
+            return symbols[piece.color][piece.type];
+        }
+
+        function handleSquareClick(row, col) {
+            log(`Square clicked: [${row}, ${col}]`);
+            
+            // Check if it's your turn
+            if (currentTurn !== playerColor) {
+                log(`Not your turn! You are ${playerColor}, current turn is ${currentTurn}`, 'error');
+                return;
+            }
+
+            const piece = board[row][col];
+            
+            // Clear previous selections
+            clearHighlights();
+
+            if (selectedSquare) {
+                const [selectedRow, selectedCol] = selectedSquare;
+                
+                // If clicking on the same piece, deselect it
+                if (row === selectedRow && col === selectedCol) {
+                    selectedSquare = null;
+                    return;
+                }
+
+                // Try to make a move
+                log(`Attempting move from [${selectedRow}, ${selectedCol}] to [${row}, ${col}]`);
+                socket.emit('makeMove', { fromRow: selectedRow, fromCol: selectedCol, toRow: row, toCol: col });
+                selectedSquare = null;
+            } else if (piece && piece.color === playerColor) {
+                // Select a piece
+                selectedSquare = [row, col];
+                highlightSquare(row, col, 'selected');
+                log(`Selected ${piece.type} at [${row}, ${col}]`);
+            } else if (piece) {
+                log(`Cannot select opponent's piece`, 'error');
+            }
+        }
+
+        function clearHighlights() {
+            const squares = document.querySelectorAll('.square');
+            squares.forEach(square => {
+                square.classList.remove('selected', 'valid');
+            });
+        }
+
+        function highlightSquare(row, col, className) {
+            const square = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            if (square) {
+                square.classList.add(className);
+            }
+        }
+
+        function createGame() {
+            const playerName = prompt('Enter your name:');
+            if (playerName) {
+                log(`Creating game as ${playerName}`, 'info');
+                socket.emit('createGame', playerName);
+            }
+        }
+
+        function joinGame() {
+            const teamCode = prompt('Enter team code:');
+            const playerName = prompt('Enter your name:');
+            if (teamCode && playerName) {
+                log(`Joining game ${teamCode} as ${playerName}`, 'info');
+                socket.emit('joinGame', { teamCode, playerName });
+            }
+        }
+
+        // Initialize
+        socket = io();
+        initializeBoard();
+        renderBoard();
+
+        // Socket event handlers
+        socket.on('connect', () => {
+            log('Connected to server', 'success');
+            updateStatus();
+        });
+
+        socket.on('disconnect', () => {
+            log('Disconnected from server', 'error');
+            updateStatus();
+        });
+
+        socket.on('gameCreated', (data) => {
+            log(`Game created: ${JSON.stringify(data)}`, 'success');
+            teamCode = data.teamCode;
+            playerColor = data.playerColor;
+            updateStatus();
+        });
+
+        socket.on('gameReady', (data) => {
+            log(`Game ready: ${JSON.stringify(data)}`, 'success');
+            board = data.board;
+            currentTurn = data.currentPlayer;
+            playerColor = data.players.find(p => p.id === socket.id)?.color;
+            renderBoard();
+            updateStatus();
+        });
+
+        socket.on('moveMade', (data) => {
+            log(`Move made: ${JSON.stringify(data)}`, 'success');
+            board = data.board;
+            currentTurn = data.currentPlayer;
+            renderBoard();
+            updateStatus();
+        });
+
+        socket.on('playerLeft', (data) => {
+            log(`Player left: ${JSON.stringify(data)}`, 'error');
+        });
+
+        socket.on('joinError', (message) => {
+            log(`Join error: ${message}`, 'error');
+        });
+
+        updateStatus();
+    </script>
+</body>
+</html> 
