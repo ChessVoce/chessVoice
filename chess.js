@@ -244,12 +244,18 @@ class ChessGame {
         document.getElementById('intro-screen').style.display = 'none';
         document.getElementById('auth-section').style.display = 'flex';
         document.getElementById('game-container').style.display = 'none';
+        // Hide back-to-auth button
+        const backBtn = document.getElementById('back-to-auth-btn');
+        if (backBtn) backBtn.style.display = 'none';
     }
 
     showGameInterface() {
         document.getElementById('intro-screen').style.display = 'none';
         document.getElementById('auth-section').style.display = 'none';
         document.getElementById('game-container').style.display = 'block';
+        // Hide back-to-auth button by default
+        const backBtn = document.getElementById('back-to-auth-btn');
+        if (backBtn) backBtn.style.display = 'none';
     }
 
     showLoginForm() {
