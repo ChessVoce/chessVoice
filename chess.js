@@ -1,5 +1,8 @@
 class ChessGame {
     constructor() {
+        // API Base URL configuration
+        this.apiBaseUrl = this.getApiBaseUrl();
+        
         this.board = this.initializeBoard();
         this.currentPlayer = 'white';
         this.selectedSquare = null;
@@ -77,11 +80,28 @@ class ChessGame {
         this.setupPasswordVisibilityToggles();
     }
 
+    // Get API base URL based on current environment
+    getApiBaseUrl() {
+        // Check if we're running locally or on a deployed version
+        const hostname = window.location.hostname;
+        
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            // Local development - use relative URLs
+            return '';
+        } else {
+            // Deployed version - you need to replace this with your actual deployed backend URL
+            // For example: 'https://your-backend-domain.com' or 'https://your-heroku-app.herokuapp.com'
+            console.warn('⚠️ Frontend is running on a deployed domain but backend URL is not configured.');
+            console.warn('Please update the getApiBaseUrl() method in chess.js with your actual backend URL.');
+            return 'http://localhost:3000'; // This won't work from deployed frontend
+        }
+    }
+
     async initializeAuth() {
         // Check if user is already authenticated
         if (this.authToken) {
             try {
-                const response = await fetch('/api/auth/me', {
+                const response = await fetch(`${this.apiBaseUrl}/api/auth/me`, {
                     headers: {
                         'Authorization': `Bearer ${this.authToken}`
                     }
@@ -250,7 +270,7 @@ class ChessGame {
         this.setLoadingState(submitBtn, true);
 
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -313,7 +333,7 @@ class ChessGame {
         this.setLoadingState(submitBtn, true);
 
         try {
-            const response = await fetch('/api/auth/signup', {
+            const response = await fetch(`${this.apiBaseUrl}/api/auth/signup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -366,7 +386,7 @@ class ChessGame {
                 requestBody.method = method;
             }
 
-            const response = await fetch('/api/auth/forgot-password', {
+            const response = await fetch(`${this.apiBaseUrl}/api/auth/forgot-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -417,7 +437,7 @@ class ChessGame {
         this.setLoadingState(submitBtn, true);
 
         try {
-            const response = await fetch('/api/auth/reset-password', {
+            const response = await fetch(`${this.apiBaseUrl}/api/auth/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -449,7 +469,7 @@ class ChessGame {
     async handleLogout() {
         try {
             if (this.authToken) {
-                await fetch('/api/auth/logout', {
+                await fetch(`${this.apiBaseUrl}/api/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${this.authToken}`
@@ -606,7 +626,7 @@ class ChessGame {
 
     initializeMultiplayer() {
         // Initialize Socket.IO connection with authentication
-        this.socket = io({
+        this.socket = io(this.apiBaseUrl || window.location.origin, {
             auth: {
                 token: this.authToken
             }
@@ -2156,7 +2176,7 @@ class ChessGame {
                 if (file) {
                     const formData = new FormData();
                     formData.append('profilePicture', file);
-                    const res = await fetch('/api/auth/upload-profile-picture', {
+                    const res = await fetch(`${this.apiBaseUrl}/api/auth/upload-profile-picture`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${this.authToken}` },
                         body: formData
@@ -2178,7 +2198,7 @@ class ChessGame {
                 if (email) body.email = email;
                 if (phoneNumber) body.phoneNumber = phoneNumber;
                 if (Object.keys(body).length > 0) {
-                    const res = await fetch('/api/auth/update-info', {
+                    const res = await fetch(`${this.apiBaseUrl}/api/auth/update-info`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2259,7 +2279,7 @@ class ChessGame {
             }
             messageDiv.textContent = 'Changing password...';
             try {
-                const res = await fetch('/api/auth/change-password', {
+                const res = await fetch(`${this.apiBaseUrl}/api/auth/change-password`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
