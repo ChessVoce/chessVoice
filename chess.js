@@ -228,6 +228,16 @@ class ChessGame {
         if (defaultAvatar) {
             defaultAvatar.classList.add('selected');
         }
+
+        // Guest login/signup buttons
+        document.getElementById('guest-login-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.loginAsGuest();
+        });
+        document.getElementById('guest-signup-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.loginAsGuest();
+        });
     }
 
     showAuthInterface() {
@@ -2641,6 +2651,28 @@ class ChessGame {
         this.isVideoChatActive = false;
         if (this.startVideoBtn) this.startVideoBtn.style.display = 'inline-flex';
         if (this.hangupVideoBtn) this.hangupVideoBtn.style.display = 'none';
+    }
+
+    loginAsGuest() {
+        this.currentUser = { username: 'Guest', isGuest: true };
+        this.authToken = null;
+        localStorage.removeItem('authToken');
+        this.showGameInterface();
+        this.disableGuestFeatures();
+        this.showAuthSuccess('Playing as Guest!');
+    }
+
+    disableGuestFeatures() {
+        // Hide multiplayer controls, chat, and profile
+        const multiplayerControls = document.querySelector('.multiplayer-controls');
+        if (multiplayerControls) multiplayerControls.style.display = 'none';
+        const chatSection = document.getElementById('chat-section');
+        if (chatSection) chatSection.style.display = 'none';
+        const userProfile = document.getElementById('user-profile');
+        if (userProfile) userProfile.style.display = 'none';
+        // Optionally show a guest badge or message
+        const gameStatus = document.getElementById('game-status');
+        if (gameStatus) gameStatus.textContent = 'Guest Mode: Local Play Only';
     }
 }
 
