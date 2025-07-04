@@ -1016,37 +1016,81 @@ class ChessGame {
             return;
         }
         const piece = this.board[row][col];
-        // If no piece is selected yet
+        // Multiplayer: Only allow moving your own pieces and only on your turn
+        if (this.isMultiplayer) {
+            if (!this.playerColor || this.playerColor !== this.currentPlayer) {
+                // Not your turn
+                return;
+            }
+            if (!this.selectedSquare) {
+                if (piece && piece.color === this.playerColor) {
+                    this.selectedSquare = [row, col];
+                    this.clearHighlights();
+                    this.highlightSquare(row, col, 'selected');
+                    this.highlightValidMoves(row, col);
+                }
+            } else {
+                const [fromRow, fromCol] = this.selectedSquare;
+                if (fromRow === row && fromCol === col) {
+                    this.selectedSquare = null;
+                    this.clearHighlights();
+                    return;
+                }
+                // Only allow moving your own piece
+                const fromPiece = this.board[fromRow][fromCol];
+                if (!fromPiece || fromPiece.color !== this.playerColor) {
+                    this.selectedSquare = null;
+                    this.clearHighlights();
+                    return;
+                }
+                if (this.isValidMove(fromRow, fromCol, row, col)) {
+                    // Emit move to server, do not update board locally
+                    if (this.socket) {
+                        this.socket.emit('makeMove', { fromRow, fromCol, toRow: row, toCol: col });
+                    }
+                    this.selectedSquare = null;
+                    this.clearHighlights();
+                } else {
+                    // If clicked another of your own pieces, select it
+                    if (piece && piece.color === this.playerColor) {
+                        this.selectedSquare = [row, col];
+                        this.clearHighlights();
+                        this.highlightSquare(row, col, 'selected');
+                        this.highlightValidMoves(row, col);
+                    } else {
+                        this.selectedSquare = null;
+                        this.clearHighlights();
+                    }
+                }
+            }
+            return;
+        }
+        // Local play (not multiplayer)
         if (!this.selectedSquare) {
-            // Only allow selecting a piece of the current player's color
             if (piece && piece.color === this.currentPlayer) {
                 this.selectedSquare = [row, col];
                 this.clearHighlights();
                 this.highlightSquare(row, col, 'selected');
                 this.highlightValidMoves(row, col);
             }
-                } else {
+        } else {
             const [fromRow, fromCol] = this.selectedSquare;
-            // If clicking the same square, deselect
             if (fromRow === row && fromCol === col) {
                 this.selectedSquare = null;
                 this.clearHighlights();
                 return;
             }
-            // Try to make a move
             if (this.isValidMove(fromRow, fromCol, row, col)) {
                 this.makeMove(fromRow, fromCol, row, col);
                 this.selectedSquare = null;
                 this.clearHighlights();
             } else {
-                // If clicked another of your own pieces, select it
                 if (piece && piece.color === this.currentPlayer) {
-            this.selectedSquare = [row, col];
+                    this.selectedSquare = [row, col];
                     this.clearHighlights();
-            this.highlightSquare(row, col, 'selected');
+                    this.highlightSquare(row, col, 'selected');
                     this.highlightValidMoves(row, col);
                 } else {
-                    // Invalid move, just deselect
                     this.selectedSquare = null;
                     this.clearHighlights();
                 }
