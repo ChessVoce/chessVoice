@@ -127,7 +127,7 @@ class ChessGame {
                 if (response.ok) {
                     const data = await response.json();
                     this.currentUser = data.user;
-                    if (this.socket) this.socket.disconnect();
+                    // Do NOT disconnect socket globally; just re-initialize for this instance
                     this.initializeMultiplayer();
                     this.showGameInterface();
                     this.updateUserProfile();
@@ -325,7 +325,7 @@ class ChessGame {
                 this.authToken = data.token;
                 this.currentUser = data.user;
                 localStorage.setItem('authToken', this.authToken);
-                if (this.socket) this.socket.disconnect();
+                // Do NOT disconnect socket globally; just re-initialize for this instance
                 this.initializeMultiplayer();
                 this.showGameInterface();
                 this.updateUserProfile();
@@ -522,6 +522,11 @@ class ChessGame {
         } finally {
             this.clearAuth();
             this.showAuthInterface();
+            // Only disconnect this instance's socket
+            if (this.socket) {
+                this.socket.disconnect();
+                this.socket = null;
+            }
         }
     }
 
