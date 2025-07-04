@@ -311,7 +311,15 @@ class ChessGame {
                 body: JSON.stringify({ identifier, password })
             });
 
-            const data = await response.json();
+            let data;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                // Not JSON, read as text
+                const text = await response.text();
+                data = { error: text };
+            }
 
             if (response.ok) {
                 this.authToken = data.token;
