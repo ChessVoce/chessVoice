@@ -89,11 +89,22 @@ class ChessGame {
             // Local development - use relative URLs
             return '';
         } else {
-            // Deployed version - you need to replace this with your actual deployed backend URL
-            // For example: 'https://your-backend-domain.com' or 'https://your-heroku-app.herokuapp.com'
-            console.warn('⚠️ Frontend is running on a deployed domain but backend URL is not configured.');
-            console.warn('Please update the getApiBaseUrl() method in chess.js with your actual backend URL.');
-            return 'http://localhost:3000'; // This won't work from deployed frontend
+            // Deployed version - replace with your actual backend URL after deployment
+            // Examples:
+            // - Render: 'https://chessvoice-backend.onrender.com'
+            // - Railway: 'https://chessvoice-backend.railway.app'
+            // - Heroku: 'https://your-app-name.herokuapp.com'
+            
+            // For now, this will show a warning but allow the app to work locally
+            const deployedBackendUrl = 'https://your-backend-url-here.com'; // Replace this!
+            
+            if (deployedBackendUrl === 'https://your-backend-url-here.com') {
+                console.warn('⚠️ Please update the deployedBackendUrl in chess.js with your actual backend URL');
+                console.warn('📝 Deploy your backend first, then update this URL');
+                return ''; // Fallback to relative URLs
+            }
+            
+            return deployedBackendUrl;
         }
     }
 
