@@ -900,7 +900,21 @@ class ChessGame {
                 this.renderChatMessages();
             }
             
+            // Set opponent name for random matches
+            if (data.players) {
+                const opponent = data.players.find(p => p.color !== this.playerColor);
+                this.opponentName = opponent ? opponent.name : 'Opponent';
+            } else if (this.opponentName) {
+                // Keep existing opponent name if already set
+            } else {
+                this.opponentName = 'Opponent';
+            }
+            
+            console.log(`You are playing as ${this.playerColor}, opponent is ${this.opponentName}`);
+            console.log(`Current player: ${this.currentPlayer}`);
+            
             this.renderBoard();
+            this.updateGameInfo();
             this.hideRandomMatchModal();
             this.hideApprovalRequestModal();
             this.showNotification('Game started!', 'success');
@@ -974,8 +988,8 @@ class ChessGame {
             randomMatchBtn.style.display = 'none';
             leaveBtn.style.display = 'block';
             teamCodeSection.style.display = 'block';
-            chatSection.style.display = 'none';
-            emojiBtn.style.display = 'none';
+            chatSection.style.display = 'flex';
+            emojiBtn.style.display = 'block';
             
             document.getElementById('player-role').textContent = 
                 `Playing as ${this.playerColor === 'white' ? 'White' : 'Black'}`;
