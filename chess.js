@@ -1004,7 +1004,18 @@ class ChessGame {
                     img.alt = piece.type;
                     square.appendChild(img);
                 }
-                square.onclick = () => this.handleSquareClick(row, col);
+                // Prevent clicking opponent's pieces in multiplayer
+                if (this.isMultiplayer) {
+                    const piece = this.board[row][col];
+                    if (piece && piece.color !== this.playerColor) {
+                        // Disable click for opponent's pieces
+                        square.onclick = null;
+                    } else {
+                        square.onclick = () => this.handleSquareClick(row, col);
+                    }
+                } else {
+                    square.onclick = () => this.handleSquareClick(row, col);
+                }
                 boardDiv.appendChild(square);
             }
         }
@@ -1207,16 +1218,17 @@ class ChessGame {
 
     // Update handleMoveMade for online moves
     handleMoveMade(data) {
-        const { move, board, currentPlayer, gameOver, gameEnd, moveHistory } = data;
+        // Always update board and state from server for robustness
+        const { board, currentPlayer, gameOver, gameEnd, moveHistory, move } = data;
+        this.board = board;
+        this.currentPlayer = currentPlayer;
+        this.gameOver = gameOver;
+        this.moveHistory = moveHistory || this.moveHistory;
         if (move) {
             this.animatePieceMoveAbsolute(move.from[0], move.from[1], move.to[0], move.to[1]).then(() => {
-                this.board = board;
-                this.currentPlayer = currentPlayer;
-                this.gameOver = gameOver;
-                this.moveHistory = moveHistory || this.moveHistory;
-        this.renderBoard();
-        this.updateGameInfo();
-        this.updateMoveHistory();
+                this.renderBoard();
+                this.updateGameInfo();
+                this.updateMoveHistory();
                 if (gameOver && gameEnd && typeof gameEnd === 'string' && gameEnd.includes('checkmate')) {
                     let winner = 'Unknown';
                     if (gameEnd.includes('White wins')) {
@@ -1228,10 +1240,6 @@ class ChessGame {
                 }
             });
         } else {
-            this.board = board;
-            this.currentPlayer = currentPlayer;
-            this.gameOver = gameOver;
-            this.moveHistory = moveHistory || this.moveHistory;
             this.renderBoard();
             this.updateGameInfo();
             this.updateMoveHistory();
