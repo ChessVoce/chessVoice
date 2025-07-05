@@ -61,6 +61,42 @@ const authRoutes = require('./routes/auth');
 // Use routes
 app.use('/api/auth', authRoutes);
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        database: isDatabaseConnected ? 'Connected' : 'Disconnected',
+        uptime: process.uptime()
+    });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'ChessVoice Backend API',
+        status: 'Running',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+    res.status(404).json({
+        error: 'Not found',
+        message: 'The requested resource was not found'
+    });
+});
+
 // Import models
 const Game = require('./models/Game');
 const User = require('./models/User');
