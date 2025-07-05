@@ -537,25 +537,22 @@ class ChessGame {
     }
 
     updateUserProfile() {
-        if (this.currentUser) {
-            document.getElementById('user-username').textContent = this.currentUser.username;
-            // Set avatar image
-            const avatarImg = document.getElementById('user-avatar');
+        const profileSection = document.getElementById('user-profile');
+        if (this.currentUser && profileSection) {
+            const avatarImg = profileSection.querySelector('img');
+            const nameSpan = profileSection.querySelector('span');
+            
             if (avatarImg) {
-                let pic = this.currentUser.profilePicture;
-                console.log('Profile picture URL:', pic);
-                if (pic) {
-                    avatarImg.src = pic;
+                if (this.currentUser.profilePicture) {
+                    avatarImg.src = this.currentUser.profilePicture;
                 } else {
-                    avatarImg.src = '/default-avatar.png'; // Use a default image in your public folder
+                    // Use a simple default avatar data URI
+                    avatarImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNFNUU3RUIiLz4KPGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iNiIgZmlsbD0iIzk0QTNBRiIvPgo8cGF0aCBkPSJNMTIgMzJDMjAgMjggMjggMzIgMzYgMzJWMzZDMzYgMzguMjA5MSAzNC4yMDkxIDQwIDMyIDQwSDE2QzEzLjc5MDkgNDAgMTIgMzguMjA5MSAxMiAzNlYzMloiIGZpbGw9IiM5NEEzQUYiLz4KPC9zdmc+';
                 }
             }
             
-            if (this.currentUser.gameStats) {
-                const stats = this.currentUser.gameStats;
-                document.getElementById('user-rating').textContent = `Rating: ${stats.rating}`;
-                document.getElementById('user-record').textContent = 
-                    `${stats.gamesWon}W/${stats.gamesLost}L/${stats.gamesDrawn}D`;
+            if (nameSpan) {
+                nameSpan.textContent = this.currentUser.username || 'User';
             }
         }
     }
@@ -2328,11 +2325,11 @@ class ChessGame {
     updateProfilePictureUI(profilePicture) {
         const avatarImg = document.getElementById('user-avatar');
         if (avatarImg) {
-            console.log('Profile picture URL:', profilePicture);
             if (profilePicture) {
                 avatarImg.src = profilePicture;
             } else {
-                avatarImg.src = '/default-avatar.png';
+                // Use a simple default avatar data URI
+                avatarImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNFNUU3RUIiLz4KPGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iNiIgZmlsbD0iIzk0QTNBRiIvPgo8cGF0aCBkPSJNMTIgMzJDMjAgMjggMjggMzIgMzYgMzJWMzZDMzYgMzguMjA5MSAzNC4yMDkxIDQwIDMyIDQwSDE2QzEzLjc5MDkgNDAgMTIgMzguMjA5MSAxMiAzNlYzMloiIGZpbGw9IiM5NEEzQUYiLz4KPC9zdmc+';
             }
         }
     }
