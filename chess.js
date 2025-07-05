@@ -544,7 +544,11 @@ class ChessGame {
             
             if (avatarImg) {
                 if (this.currentUser.profilePicture) {
-                    avatarImg.src = this.currentUser.profilePicture;
+                    // Construct full URL for profile picture
+                    const profilePicUrl = this.currentUser.profilePicture.startsWith('http') 
+                        ? this.currentUser.profilePicture 
+                        : this.apiBaseUrl + this.currentUser.profilePicture;
+                    avatarImg.src = profilePicUrl;
                 } else {
                     // Use a simple default avatar data URI
                     avatarImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNFNUU3RUIiLz4KPGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iNiIgZmlsbD0iIzk0QTNBRiIvPgo8cGF0aCBkPSJNMTIgMzJDMjAgMjggMjggMzIgMzYgMzJWMzZDMzYgMzguMjA5MSAzNC4yMDkxIDQwIDMyIDQwSDE2QzEzLjc5MDkgNDAgMTIgMzguMjA5MSAxMiAzNlYzMloiIGZpbGw9IiM5NEEzQUYiLz4KPC9zdmc+';
@@ -2458,7 +2462,11 @@ class ChessGame {
         const avatarImg = document.getElementById('user-avatar');
         if (avatarImg) {
             if (profilePicture) {
-                avatarImg.src = profilePicture;
+                // Construct full URL for profile picture
+                const profilePicUrl = profilePicture.startsWith('http') 
+                    ? profilePicture 
+                    : this.apiBaseUrl + profilePicture;
+                avatarImg.src = profilePicUrl;
             } else {
                 // Use a simple default avatar data URI
                 avatarImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNFNUU3RUIiLz4KPGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iNiIgZmlsbD0iIzk0QTNBRiIvPgo8cGF0aCBkPSJNMTIgMzJDMjAgMjggMjggMzIgMzYgMzJWMzZDMzYgMzguMjA5MSAzNC4yMDkxIDQwIDMyIDQwSDE2QzEzLjc5MDkgNDAgMTIgMzguMjA5MSAxMiAzNlYzMloiIGZpbGw9IiM5NEEzQUYiLz4KPC9zdmc+';
