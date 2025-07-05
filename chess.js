@@ -746,12 +746,42 @@ class ChessGame {
         this.socket.on('playerLeft', (data) => {
             console.log('Player left:', data);
             this.showNotification(data.message, 'error');
+            
+            // Reset multiplayer state and board
+            this.isMultiplayer = false;
+            this.teamCode = null;
+            this.playerColor = null;
+            this.opponentName = null;
+            
+            // Reset board to initial state
+            this.board = this.initializeBoard();
+            this.currentPlayer = 'white';
+            this.selectedSquare = null;
+            this.moveHistory = [];
+            this.gameOver = false;
+            this.chatMessages = [];
+            
+            // Clear highlights and update UI
+            this.clearHighlights();
+            this.renderBoard();
+            this.updateGameInfo();
+            this.updateMoveHistory();
+            
+            // Update multiplayer UI
             this.setMultiplayerStatus(false);
+            
+            // Clear chat
+            if (this.chatMessagesContainer) {
+                this.chatMessagesContainer.innerHTML = '';
+            }
             
             // Voice Chat
             this.setVoiceChatUI(false);
             // Video Chat
             this.setVideoChatUI(false);
+            
+            // Show notification that game has been reset
+            this.showNotification('Game reset to local play mode', 'info');
         });
 
         this.socket.on('joinError', (message) => {
