@@ -784,6 +784,48 @@ class ChessGame {
             this.showNotification('Game reset to local play mode', 'info');
         });
 
+        // Game ended by server (when a player leaves)
+        this.socket.on('gameEnded', (data) => {
+            console.log('[DEBUG] gameEnded event received:', data);
+            this.showNotification(data.message || 'Game ended - opponent left the game', 'warning');
+            
+            // Reset multiplayer state and board
+            this.isMultiplayer = false;
+            this.teamCode = null;
+            this.playerColor = null;
+            this.opponentName = null;
+            
+            // Reset board to initial state
+            this.board = this.initializeBoard();
+            this.currentPlayer = 'white';
+            this.selectedSquare = null;
+            this.moveHistory = [];
+            this.gameOver = false;
+            this.chatMessages = [];
+            
+            // Clear highlights and update UI
+            this.clearHighlights();
+            this.renderBoard();
+            this.updateGameInfo();
+            this.updateMoveHistory();
+            
+            // Update multiplayer UI
+            this.setMultiplayerStatus(false);
+            
+            // Clear chat
+            if (this.chatMessagesContainer) {
+                this.chatMessagesContainer.innerHTML = '';
+            }
+            
+            // Voice Chat
+            this.setVoiceChatUI(false);
+            // Video Chat
+            this.setVideoChatUI(false);
+            
+            // Show notification that game has been reset
+            this.showNotification('Game reset to local play mode', 'info');
+        });
+
         this.socket.on('joinError', (message) => {
             console.log('Join error:', message);
             this.showNotification(message, 'error');
@@ -2640,6 +2682,14 @@ class ChessGame {
     }
 
     leaveGame() {
+        console.log('[DEBUG] leaveGame called');
+        
+        // If in multiplayer mode, notify server and other players
+        if (this.isMultiplayer && this.socket && this.teamCode) {
+            console.log('[DEBUG] leaveGame: notifying server of game leave');
+            this.socket.emit('leaveGame', { teamCode: this.teamCode });
+        }
+        
         // Reset multiplayer state and call newGame again
         this.isMultiplayer = false;
         this.teamCode = null;

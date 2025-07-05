@@ -480,18 +480,21 @@ io.on('connection', (socket) => {
                 playerSockets.delete(socket.id);
                 
                 game.players = game.players.filter(p => p.id !== socket.id);
-                if (game.players.length === 0) {
-                    activeGames.delete(teamCode);
-                } else {
-                    // Add system message about player leaving
-                    if (leavingPlayer) {
-                        addSystemMessage(game, `${leavingPlayer.name} left the game`);
-                    }
-                    
-                    io.to(teamCode).emit('playerLeft', {
-                        message: 'Opponent has left the game'
-                    });
+                
+                // Add system message about player leaving
+                if (leavingPlayer) {
+                    addSystemMessage(game, `${leavingPlayer.name} left the game`);
                 }
+                
+                // End the game for all remaining players
+                io.to(teamCode).emit('gameEnded', {
+                    message: `${leavingPlayer ? leavingPlayer.name : 'A player'} left the game. Game ended.`
+                });
+                
+                // Remove the game from active games
+                activeGames.delete(teamCode);
+                
+                console.log(`Game ${teamCode} ended because ${leavingPlayer ? leavingPlayer.name : 'a player'} left`);
             }
         }
     });
