@@ -822,8 +822,15 @@ class ChessGame {
             // Video Chat
             this.setVideoChatUI(false);
             
-            // Show notification that game has been reset
-            this.showNotification('Game reset to local play mode', 'info');
+            // Redirect to home page if user is authenticated (not guest)
+            if (this.currentUser && this.authToken) {
+                console.log('[DEBUG] gameEnded: redirecting to home page');
+                this.showAuthInterface();
+                this.showNotification('Game ended. Returned to home page', 'info');
+            } else {
+                // For guest users, just show a notification that they're back to local play
+                this.showNotification('Game ended. Back to local play mode', 'info');
+            }
         });
 
         this.socket.on('joinError', (message) => {
@@ -2697,6 +2704,16 @@ class ChessGame {
         this.opponentName = null;
         this.setMultiplayerStatus(false);
         this.newGame();
+        
+        // Redirect to home page if user is authenticated (not guest)
+        if (this.currentUser && this.authToken) {
+            console.log('[DEBUG] leaveGame: redirecting to home page');
+            this.showAuthInterface();
+            this.showNotification('Returned to home page', 'info');
+        } else {
+            // For guest users, just show a notification that they're back to local play
+            this.showNotification('Back to local play mode', 'info');
+        }
     }
 
     setVideoChatUI(online) {
