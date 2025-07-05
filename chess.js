@@ -881,11 +881,17 @@ class ChessGame {
 
         // Game is starting after approval
         this.socket.on('gameStarting', (data) => {
-            console.log('Game starting:', data);
+            console.log('[DEBUG] gameStarting event received:', data);
             this.board = data.board;
             this.currentPlayer = data.currentPlayer;
             this.isMultiplayer = true;
             this.playerColor = data.playerColor;
+            
+            console.log('[DEBUG] gameStarting: board set');
+            console.log('[DEBUG] gameStarting: currentPlayer set to:', this.currentPlayer);
+            console.log('[DEBUG] gameStarting: playerColor set to:', this.playerColor);
+            console.log('[DEBUG] gameStarting: isMultiplayer set to:', this.isMultiplayer);
+            
             this.setMultiplayerStatus(true);
             
             // Show chat section now that the game is ready
@@ -910,8 +916,8 @@ class ChessGame {
                 this.opponentName = 'Opponent';
             }
             
-            console.log(`You are playing as ${this.playerColor}, opponent is ${this.opponentName}`);
-            console.log(`Current player: ${this.currentPlayer}`);
+            console.log(`[DEBUG] gameStarting: You are playing as ${this.playerColor}, opponent is ${this.opponentName}`);
+            console.log(`[DEBUG] gameStarting: Current player: ${this.currentPlayer}`);
             
             this.renderBoard();
             this.updateGameInfo();
@@ -971,6 +977,7 @@ class ChessGame {
     }
 
     setMultiplayerStatus(isMultiplayer) {
+        console.log('[DEBUG] setMultiplayerStatus called with:', isMultiplayer);
         this.isMultiplayer = isMultiplayer;
         const multiplayerStatus = document.getElementById('multiplayer-status');
         const createBtn = document.getElementById('create-game-btn');
@@ -981,7 +988,11 @@ class ChessGame {
         const chatSection = document.getElementById('chat-section');
         const emojiBtn = document.getElementById('emoji-btn');
         
+        console.log('[DEBUG] setMultiplayerStatus: chatSection found:', !!chatSection);
+        console.log('[DEBUG] setMultiplayerStatus: emojiBtn found:', !!emojiBtn);
+        
         if (isMultiplayer) {
+            console.log('[DEBUG] setMultiplayerStatus: setting multiplayer UI');
             multiplayerStatus.style.display = 'block';
             createBtn.style.display = 'none';
             joinBtn.style.display = 'none';
@@ -991,9 +1002,13 @@ class ChessGame {
             chatSection.style.display = 'flex';
             emojiBtn.style.display = 'block';
             
+            console.log('[DEBUG] setMultiplayerStatus: chatSection display set to:', chatSection.style.display);
+            console.log('[DEBUG] setMultiplayerStatus: emojiBtn display set to:', emojiBtn.style.display);
+            
             document.getElementById('player-role').textContent = 
                 `Playing as ${this.playerColor === 'white' ? 'White' : 'Black'}`;
         } else {
+            console.log('[DEBUG] setMultiplayerStatus: setting local play UI');
             multiplayerStatus.style.display = 'none';
             createBtn.style.display = 'block';
             joinBtn.style.display = 'block';
@@ -1070,16 +1085,25 @@ class ChessGame {
         const piece = this.board[row][col];
         // Multiplayer: Only allow moving your own pieces and only on your turn
         if (this.isMultiplayer) {
+            console.log('[DEBUG] handleSquareClick: multiplayer mode');
+            console.log('[DEBUG] playerColor:', this.playerColor);
+            console.log('[DEBUG] currentPlayer:', this.currentPlayer);
+            console.log('[DEBUG] isMultiplayer:', this.isMultiplayer);
+            
             if (!this.playerColor || this.playerColor !== this.currentPlayer) {
-                // Not your turn
+                console.log('[DEBUG] handleSquareClick: not your turn or playerColor not set');
+                console.log('[DEBUG] playerColor:', this.playerColor, 'currentPlayer:', this.currentPlayer);
                 return;
             }
             if (!this.selectedSquare) {
                 if (piece && piece.color === this.playerColor) {
+                    console.log('[DEBUG] handleSquareClick: selecting piece at', row, col);
                     this.selectedSquare = [row, col];
                     this.clearHighlights();
                     this.highlightSquare(row, col, 'selected');
                     this.highlightValidMoves(row, col);
+                } else {
+                    console.log('[DEBUG] handleSquareClick: cannot select piece - piece:', piece, 'playerColor:', this.playerColor);
                 }
             } else {
                 const [fromRow, fromCol] = this.selectedSquare;
@@ -1096,6 +1120,7 @@ class ChessGame {
                     return;
                 }
                 if (this.isValidMove(fromRow, fromCol, row, col)) {
+                    console.log('[DEBUG] handleSquareClick: making move from', fromRow, fromCol, 'to', row, col);
                     // Emit move to server, do not update board locally
                     if (this.socket) {
                         this.socket.emit('makeMove', { fromRow, fromCol, toRow: row, toCol: col });
@@ -1103,6 +1128,7 @@ class ChessGame {
                     this.selectedSquare = null;
                     this.clearHighlights();
                 } else {
+                    console.log('[DEBUG] handleSquareClick: invalid move');
                     // If clicked another of your own pieces, select it
                     if (piece && piece.color === this.playerColor) {
                         this.selectedSquare = [row, col];
@@ -1706,11 +1732,24 @@ class ChessGame {
 
     // Chat Functions
     sendMessage() {
-        if (!this.isMultiplayer || !this.chatInput) return;
+        console.log('[DEBUG] sendMessage called');
+        console.log('[DEBUG] isMultiplayer:', this.isMultiplayer);
+        console.log('[DEBUG] chatInput:', this.chatInput);
+        
+        if (!this.isMultiplayer || !this.chatInput) {
+            console.log('[DEBUG] sendMessage: cannot send - isMultiplayer:', this.isMultiplayer, 'chatInput exists:', !!this.chatInput);
+            return;
+        }
         
         const message = this.chatInput.value.trim();
-        if (message.length === 0) return;
+        console.log('[DEBUG] sendMessage: message:', message);
         
+        if (message.length === 0) {
+            console.log('[DEBUG] sendMessage: empty message, not sending');
+            return;
+        }
+        
+        console.log('[DEBUG] sendMessage: sending message via socket');
         // Send message to server
         this.socket.emit('sendMessage', message);
         
