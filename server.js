@@ -920,6 +920,12 @@ io.on('connection', (socket) => {
             socket.emit('approvalError', 'Failed to respond to approval request');
         }
     });
+
+    // Voice chat signaling relay
+    socket.on('voice-signal', ({ type, offer, answer, candidate, teamCode }) => {
+        // Relay the signaling message to the other player in the same teamCode room
+        socket.to(teamCode).emit('voice-signal', { type, offer, answer, candidate });
+    });
 });
 
 // Chess game logic functions
