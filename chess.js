@@ -53,16 +53,16 @@ class ChessGame {
         this.isEmojiPickerOpen = false;
         
         // --- Video Chat Properties ---
-        this.videoPeerConnection = null;
-        this.localVideoStream = null;
-        this.remoteVideoStream = null;
-        this.isVideoChatActive = false;
+        // this.videoPeerConnection = null;
+        // this.localVideoStream = null;
+        // this.remoteVideoStream = null;
+        // this.isVideoChatActive = false;
         // Video UI elements
-        this.startVideoBtn = null;
-        this.hangupVideoBtn = null;
-        this.localVideo = null;
-        this.remoteVideo = null;
-        this.videoChatSection = null;
+        // this.startVideoBtn = null;
+        // this.hangupVideoBtn = null;
+        // this.localVideo = null;
+        // this.remoteVideo = null;
+        // this.videoChatSection = null;
         
         // 1. Add properties to track captured pieces in the constructor
         this.capturedWhite = [];
@@ -734,9 +734,6 @@ class ChessGame {
             
             // Voice Chat
             this.setVoiceChatUI(true);
-            // Video Chat
-            this.initializeVideoChat();
-            if (this.startVideoBtn) this.startVideoBtn.style.display = 'inline-flex';
         });
 
         this.socket.on('moveMade', (data) => this.handleMoveMade(data));
@@ -781,11 +778,6 @@ class ChessGame {
             
             // Voice Chat
             this.setVoiceChatUI(false);
-            // Video Chat
-            this.setVideoChatUI(false);
-            
-            // Show notification that game has been reset
-            this.showNotification('Game reset to local play mode', 'info');
         });
 
         // Game ended by server (when a player leaves)
@@ -823,8 +815,6 @@ class ChessGame {
             
             // Voice Chat
             this.setVoiceChatUI(false);
-            // Video Chat
-            this.setVideoChatUI(false);
             
             // Redirect to home page if user is authenticated (not guest)
             if (this.currentUser && this.authToken) {
@@ -843,8 +833,6 @@ class ChessGame {
             
             // Voice Chat
             this.setVoiceChatUI(false);
-            // Video Chat
-            this.setVideoChatUI(false);
         });
 
         // Random matching event handlers
@@ -2722,161 +2710,6 @@ class ChessGame {
             // For guest users, just show a notification that they're back to local play
             this.showNotification('Back to local play mode', 'info');
         }
-    }
-
-    setVideoChatUI(online) {
-        if (!this.videoChatSection) {
-            this.videoChatSection = document.getElementById('video-chat-section');
-            this.localVideo = document.getElementById('local-video');
-            this.remoteVideo = document.getElementById('remote-video');
-            this.startVideoBtn = document.getElementById('start-video-btn');
-            this.hangupVideoBtn = document.getElementById('hangup-video-btn');
-        }
-        if (this.videoChatSection) {
-            this.videoChatSection.style.display = online ? 'flex' : 'none';
-        }
-        if (this.startVideoBtn) this.startVideoBtn.style.display = online ? 'inline-flex' : 'none';
-        if (this.hangupVideoBtn) this.hangupVideoBtn.style.display = 'none';
-        if (this.localVideo) this.localVideo.srcObject = null;
-        if (this.remoteVideo) this.remoteVideo.srcObject = null;
-    }
-
-    initializeVideoChat() {
-        // Get video UI elements
-        this.videoChatSection = document.getElementById('video-chat-section');
-        this.localVideo = document.getElementById('local-video');
-        this.remoteVideo = document.getElementById('remote-video');
-        this.startVideoBtn = document.getElementById('start-video-btn');
-        this.hangupVideoBtn = document.getElementById('hangup-video-btn');
-
-        // Hide video chat UI initially
-        this.setVideoChatUI(true);
-        if (this.startVideoBtn) {
-            this.startVideoBtn.onclick = () => this.startVideoChat();
-        }
-        if (this.hangupVideoBtn) {
-            this.hangupVideoBtn.onclick = () => this.hangupVideoChat();
-        }
-
-        // WebRTC signaling handlers
-        if (this.socket) {
-            this.socket.off('video-offer');
-            this.socket.off('video-answer');
-            this.socket.off('ice-candidate');
-            this.socket.on('video-offer', async (data) => {
-                await this.handleVideoOffer(data.offer);
-            });
-            this.socket.on('video-answer', async (data) => {
-                await this.handleVideoAnswer(data.answer);
-            });
-            this.socket.on('ice-candidate', async (data) => {
-                if (data.candidate && this.videoPeerConnection) {
-                    try {
-                        await this.videoPeerConnection.addIceCandidate(data.candidate);
-                    } catch (e) {
-                        console.error('Error adding received ice candidate', e);
-                    }
-                }
-            });
-        }
-    }
-
-    async startVideoChat() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            alert('Video chat is not supported in this browser.');
-            return;
-        }
-        try {
-            this.localVideoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            this.localVideo.srcObject = this.localVideoStream;
-            this.videoPeerConnection = new RTCPeerConnection(this.rtcConfig);
-            this.localVideoStream.getTracks().forEach(track => this.videoPeerConnection.addTrack(track, this.localVideoStream));
-            this.videoPeerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    this.socket.emit('ice-candidate', { teamCode: this.teamCode, candidate: event.candidate });
-                }
-            };
-            this.videoPeerConnection.ontrack = (event) => {
-                if (!this.remoteVideoStream) {
-                    this.remoteVideoStream = new MediaStream();
-                    this.remoteVideo.srcObject = this.remoteVideoStream;
-                }
-                event.streams[0].getTracks().forEach(track => {
-                    if (!this.remoteVideoStream.getTracks().includes(track)) {
-                        this.remoteVideoStream.addTrack(track);
-                    }
-                });
-            };
-            // Create and send offer
-            const offer = await this.videoPeerConnection.createOffer();
-            await this.videoPeerConnection.setLocalDescription(offer);
-            this.socket.emit('video-offer', { teamCode: this.teamCode, offer });
-            this.isVideoChatActive = true;
-            if (this.startVideoBtn) this.startVideoBtn.style.display = 'none';
-            if (this.hangupVideoBtn) this.hangupVideoBtn.style.display = 'inline-flex';
-        } catch (err) {
-            alert('Could not start video chat: ' + err.message);
-        }
-    }
-
-    async handleVideoOffer(offer) {
-        if (!this.videoPeerConnection) {
-            this.videoPeerConnection = new RTCPeerConnection(this.rtcConfig);
-            this.videoPeerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    this.socket.emit('ice-candidate', { teamCode: this.teamCode, candidate: event.candidate });
-                }
-            };
-            this.videoPeerConnection.ontrack = (event) => {
-                if (!this.remoteVideoStream) {
-                    this.remoteVideoStream = new MediaStream();
-                    this.remoteVideo.srcObject = this.remoteVideoStream;
-                }
-                event.streams[0].getTracks().forEach(track => {
-                    if (!this.remoteVideoStream.getTracks().includes(track)) {
-                        this.remoteVideoStream.addTrack(track);
-                    }
-                });
-            };
-        }
-        if (!this.localVideoStream) {
-            this.localVideoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            this.localVideo.srcObject = this.localVideoStream;
-            this.localVideoStream.getTracks().forEach(track => this.videoPeerConnection.addTrack(track, this.localVideoStream));
-        }
-        await this.videoPeerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await this.videoPeerConnection.createAnswer();
-        await this.videoPeerConnection.setLocalDescription(answer);
-        this.socket.emit('video-answer', { teamCode: this.teamCode, answer });
-        this.isVideoChatActive = true;
-        if (this.startVideoBtn) this.startVideoBtn.style.display = 'none';
-        if (this.hangupVideoBtn) this.hangupVideoBtn.style.display = 'inline-flex';
-    }
-
-    async handleVideoAnswer(answer) {
-        if (this.videoPeerConnection) {
-            await this.videoPeerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-        }
-    }
-
-    hangupVideoChat() {
-        if (this.videoPeerConnection) {
-            this.videoPeerConnection.close();
-            this.videoPeerConnection = null;
-        }
-        if (this.localVideoStream) {
-            this.localVideoStream.getTracks().forEach(track => track.stop());
-            this.localVideoStream = null;
-        }
-        if (this.remoteVideoStream) {
-            this.remoteVideoStream.getTracks().forEach(track => track.stop());
-            this.remoteVideoStream = null;
-        }
-        if (this.localVideo) this.localVideo.srcObject = null;
-        if (this.remoteVideo) this.remoteVideo.srcObject = null;
-        this.isVideoChatActive = false;
-        if (this.startVideoBtn) this.startVideoBtn.style.display = 'inline-flex';
-        if (this.hangupVideoBtn) this.hangupVideoBtn.style.display = 'none';
     }
 
     loginAsGuest() {

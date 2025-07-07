@@ -535,12 +535,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Voice chat signaling relay
-    socket.on('voice-signal', ({ type, offer, answer, candidate, teamCode }) => {
-        // Relay the signaling message to the other player in the same teamCode room
-        socket.to(teamCode).emit('voice-signal', { type, offer, answer, candidate });
-    });
-
     // Random matchmaking events
     socket.on('startRandomMatch', async ({ preferences }) => {
         try {
@@ -925,31 +919,6 @@ io.on('connection', (socket) => {
             console.error('Error responding to approval request:', error);
             socket.emit('approvalError', 'Failed to respond to approval request');
         }
-    });
-
-    // Video chat signaling events
-    socket.on('video-offer', (data) => {
-        // data: { teamCode, offer, from }
-        socket.to(data.teamCode).emit('video-offer', {
-            offer: data.offer,
-            from: data.from
-        });
-    });
-
-    socket.on('video-answer', (data) => {
-        // data: { teamCode, answer, from }
-        socket.to(data.teamCode).emit('video-answer', {
-            answer: data.answer,
-            from: data.from
-        });
-    });
-
-    socket.on('ice-candidate', (data) => {
-        // data: { teamCode, candidate, from }
-        socket.to(data.teamCode).emit('ice-candidate', {
-            candidate: data.candidate,
-            from: data.from
-        });
     });
 });
 
