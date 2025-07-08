@@ -386,6 +386,7 @@ io.on('connection', (socket) => {
                 game.board[toRow][toCol] = { type: 'queen', color: move.piece.color };
             }
 
+            move.notation = getMoveNotation(fromRow, fromCol, toRow, toCol, move.piece, move.captured);
             game.moveHistory.push(move);
 
             // Check for game end conditions BEFORE switching currentPlayer
@@ -1528,6 +1529,24 @@ setInterval(() => {
     const stats = getMatchmakingStats();
     io.emit('matchmakingStats', stats);
 }, 30000);
+
+// Helper to generate algebraic notation for a move
+function getMoveNotation(fromRow, fromCol, toRow, toCol, piece, capturedPiece) {
+    const files = 'abcdefgh';
+    const ranks = '87654321';
+    let notation = '';
+    if (piece.type !== 'pawn') {
+        notation += piece.type.charAt(0).toUpperCase();
+    }
+    if (capturedPiece) {
+        if (piece.type === 'pawn') {
+            notation += files[fromCol];
+        }
+        notation += 'x';
+    }
+    notation += files[toCol] + ranks[toRow];
+    return notation;
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
