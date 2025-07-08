@@ -38,8 +38,20 @@ class ChessGame {
         };
         
         // Voice Chat UI Elements
-        this.startVoiceBtn = null;
-        this.muteVoiceBtn = null;
+        this.startVoiceBtn = document.getElementById('start-voice-btn');
+        this.muteVoiceBtn = document.getElementById('mute-voice-btn');
+        if (this.startVoiceBtn) {
+            this.startVoiceBtn.addEventListener('click', () => this.startVoiceChat());
+        }
+        if (this.muteVoiceBtn) {
+            this.muteVoiceBtn.addEventListener('click', () => {
+                if (this.localStream) {
+                    this.isMuted = !this.isMuted;
+                    this.localStream.getAudioTracks().forEach(track => track.enabled = !this.isMuted);
+                    this.muteVoiceBtn.textContent = this.isMuted ? 'Unmute' : 'Mute';
+                }
+            });
+        }
         
         // Chat properties
         this.chatMessages = [];
@@ -981,6 +993,48 @@ class ChessGame {
                 this.showNotification('Please start a new random match.', 'info');
             }
         });
+
+        // Add this in initializeMultiplayer or after socket is initialized
+        if (this.socket) {
+            this.socket.on('voice-signal', async (data) => {
+                if (!this.peerConnection) {
+                    this.peerConnection = new RTCPeerConnection(this.rtcConfig);
+                    this.peerConnection.onicecandidate = event => {
+                        if (event.candidate) {
+                            this.socket.emit('voice-signal', { type: 'candidate', candidate: event.candidate, teamCode: this.teamCode });
+                        }
+                    };
+                    this.peerConnection.ontrack = event => {
+                        let remoteAudio = document.getElementById('remote-audio');
+                        if (!remoteAudio) {
+                            remoteAudio = document.createElement('audio');
+                            remoteAudio.id = 'remote-audio';
+                            remoteAudio.autoplay = true;
+                            document.body.appendChild(remoteAudio);
+                        }
+                        remoteAudio.srcObject = event.streams[0];
+                    };
+                }
+                if (data.type === 'offer') {
+                    await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
+                    const answer = await this.peerConnection.createAnswer();
+                    await this.peerConnection.setLocalDescription(answer);
+                    this.socket.emit('voice-signal', { type: 'answer', answer, teamCode: this.teamCode });
+                } else if (data.type === 'answer') {
+                    await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                } else if (data.type === 'candidate') {
+                    if (data.candidate) {
+                        try {
+                            await this.peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                        } catch (err) {
+                            console.error('Error adding received ice candidate', err);
+                        }
+                    }
+                }
+            });
+        }
     }
 
     initializeChat() {

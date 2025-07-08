@@ -136,6 +136,9 @@ const randomMatchQueue = [];
 const matchmakingUsers = new Map(); // userId -> { user, preferences, socketId, timestamp }
 const activeMatches = new Map(); // matchId -> { player1, player2, gameId }
 
+// Game rooms: { roomId: { players: [socketId, ...], moves: [] } }
+const gameRooms = {};
+
 // Generate random 6-digit team code
 function generateTeamCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -159,7 +162,49 @@ async function findAvailableTeamCode() {
 }
 
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    console.log('New client connected:', socket.id);
+
+    // Join a game room
+    socket.on('joinRoom', ({ roomId }) => {
+        socket.join(roomId);
+        if (!gameRooms[roomId]) {
+            gameRooms[roomId] = { players: [], moves: [] };
+        }
+        gameRooms[roomId].players.push(socket.id);
+        // Notify others
+        io.to(roomId).emit('playerJoined', { playerId: socket.id, players: gameRooms[roomId].players });
+        // Send existing moves to new player
+        socket.emit('syncMoves', gameRooms[roomId].moves);
+    });
+
+    // Handle chess move
+    socket.on('move', ({ roomId, move }) => {
+        if (gameRooms[roomId]) {
+            gameRooms[roomId].moves.push(move);
+            socket.to(roomId).emit('move', move);
+        }
+    });
+
+    // WebRTC signaling relay
+    socket.on('signal', ({ roomId, data }) => {
+        // Relay signaling data to all other players in the room
+        socket.to(roomId).emit('signal', { from: socket.id, data });
+    });
+
+    // Handle disconnect
+    socket.on('disconnect', () => {
+        for (const roomId in gameRooms) {
+            const idx = gameRooms[roomId].players.indexOf(socket.id);
+            if (idx !== -1) {
+                gameRooms[roomId].players.splice(idx, 1);
+                io.to(roomId).emit('playerLeft', { playerId: socket.id });
+                if (gameRooms[roomId].players.length === 0) {
+                    delete gameRooms[roomId];
+                }
+            }
+        }
+        console.log('Client disconnected:', socket.id);
+    });
 
     // Create a new online game
     socket.on('createGame', async (playerName) => {
