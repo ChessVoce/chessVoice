@@ -75,6 +75,10 @@ class ChessGame {
         this.setupUpdateInfoUI();
         this.setupChangePasswordUI();
         this.setupPasswordVisibilityToggles();
+        
+        // In constructor, add:
+        this.isRobotGame = false;
+        this.robotColor = null;
     }
 
     async initializeAuth() {
@@ -1093,6 +1097,9 @@ class ChessGame {
         this.renderBoard();
         this.updateGameInfo();
         this.updateMoveHistory();
+        if (this.isRobotGame && !this.gameOver && this.currentPlayer === this.robotColor) {
+            setTimeout(() => this.makeRobotMove(), 500); // Small delay for realism
+        }
     }
 
     // Update handleMoveMade for online moves
@@ -2605,6 +2612,43 @@ class ChessGame {
         if (this.startVideoBtn) this.startVideoBtn.style.display = 'inline-flex';
         if (this.hangupVideoBtn) this.hangupVideoBtn.style.display = 'none';
     }
+
+    // ... existing code ...
+    // After newGame() method, add:
+    startRobotGame() {
+        this.newGame();
+        this.isRobotGame = true;
+        this.robotColor = 'black'; // User always plays white for now
+        this.showNotification('You are playing against the robot (AI).', 'info');
+        this.updateGameInfo();
+        this.renderBoard();
+    }
+
+    // ... existing code ...
+    // At the end of the class, add:
+    makeRobotMove() {
+        if (!this.isRobotGame || this.gameOver || this.currentPlayer !== this.robotColor) return;
+        // Find all valid moves for robot
+        const moves = [];
+        for (let fromRow = 0; fromRow < 8; fromRow++) {
+            for (let fromCol = 0; fromCol < 8; fromCol++) {
+                const piece = this.board[fromRow][fromCol];
+                if (piece && piece.color === this.robotColor) {
+                    for (let toRow = 0; toRow < 8; toRow++) {
+                        for (let toCol = 0; toCol < 8; toCol++) {
+                            if (this.isValidMove(fromRow, fromCol, toRow, toCol)) {
+                                moves.push({ fromRow, fromCol, toRow, toCol });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (moves.length === 0) return;
+        // Pick a random move
+        const move = moves[Math.floor(Math.random() * moves.length)];
+        this.makeMove(move.fromRow, move.fromCol, move.toRow, move.toCol);
+    }
 }
 
 // Initialize the game when the page loads
@@ -2639,3 +2683,12 @@ if (!document.getElementById('checkmate-modal')) {
         modal.style.display = 'none';
     };
 } 
+
+// ... existing code ...
+// In the main script initialization (after DOMContentLoaded or similar), add:
+document.getElementById('robot-game-btn').addEventListener('click', () => {
+    if (window.chessGame) {
+        window.chessGame.startRobotGame();
+    }
+});
+// ... existing code ...
