@@ -653,6 +653,8 @@ class ChessGame {
                 }
             });
         }
+        const playRobotBtn = document.getElementById('play-robot-btn');
+        if (playRobotBtn) playRobotBtn.addEventListener('click', () => this.startRobotGame());
         this.updateGameInfo();
     }
 
@@ -1376,6 +1378,50 @@ class ChessGame {
         this.renderBoard();
         this.updateGameInfo();
         this.updateMoveHistory();
+
+        // If playing against robot, send move to backend and get robot move
+        if (this.isRobotGame && this.robotGameId) {
+            const moveNotation = this.getMoveNotation(fromRow, fromCol, toRow, toCol, this.board[fromRow][fromCol], this.board[toRow][toCol]);
+            const res = await fetch(`${this.apiBaseUrl}/api/robot/move`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameId: this.robotGameId,
+                    move: moveNotation,
+                    difficulty: this.robotDifficulty
+                })
+            });
+            const data = await res.json();
+            if (data.error) {
+                this.showNotification('Robot error: ' + data.error, 'error');
+                return;
+            }
+            // Update board with robot move
+            if (data.robotMove) {
+                // Parse robot move notation and update board
+                // (Assume move is in UCI format, e.g., e2e4)
+                const from = data.robotMove.slice(0,2);
+                const to = data.robotMove.slice(2,4);
+                const fromCoords = this.notationToCoords(from);
+                const toCoords = this.notationToCoords(to);
+                if (fromCoords && toCoords) {
+                    await this.makeMove(fromCoords[0], fromCoords[1], toCoords[0], toCoords[1]);
+                }
+            }
+            if (data.gameOver) {
+                this.gameOver = true;
+                this.showNotification('Game Over! ' + (data.result || ''), 'info');
+            }
+        }
+    }
+
+    notationToCoords(notation) {
+        // Convert algebraic notation (e.g., e2) to [row, col]
+        if (!notation || notation.length !== 2) return null;
+        const file = notation.charCodeAt(0) - 'a'.charCodeAt(0);
+        const rank = 8 - parseInt(notation[1]);
+        if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
+        return [rank, file];
     }
 
     // Update handleMoveMade for online moves
@@ -2809,6 +2855,25 @@ class ChessGame {
         if (userProfile) userProfile.style.display = '';
         const gameStatus = document.getElementById('game-status');
         if (gameStatus) gameStatus.textContent = 'Game in progress';
+    }
+
+    async startRobotGame() {
+        // Ask for difficulty
+        const difficulty = prompt('Choose robot difficulty: easy, medium, hard', 'medium') || 'medium';
+        // Start new game with robot
+        const response = await fetch(`${this.apiBaseUrl}/api/robot/new-game`, { method: 'POST' });
+        const data = await response.json();
+        this.robotGameId = data.gameId;
+        this.isRobotGame = true;
+        this.robotDifficulty = difficulty;
+        this.board = this.initializeBoard(); // Reset board UI
+        this.currentPlayer = 'white';
+        this.selectedSquare = null;
+        this.moveHistory = [];
+        this.gameOver = false;
+        this.renderBoard();
+        this.updateGameInfo();
+        this.showNotification('Playing against Robot (' + difficulty + ')', 'info');
     }
 }
 

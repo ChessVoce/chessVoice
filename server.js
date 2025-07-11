@@ -57,9 +57,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const robotRoutes = require('./routes/robot');
 
 // Use routes
 app.use('/api/auth', authRoutes);
+app.use('/api/robot', robotRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
