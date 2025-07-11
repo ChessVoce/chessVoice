@@ -57,9 +57,47 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const robotRoutes = require('./routes/robot');
 
 // Use routes
 app.use('/api/auth', authRoutes);
+app.use('/api/robot', robotRoutes);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        database: isDatabaseConnected ? 'Connected' : 'Disconnected',
+        uptime: process.uptime()
+    });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'ChessVoice Backend API',
+        status: 'Running',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+    res.status(404).json({
+        error: 'Not found',
+        message: 'The requested resource was not found'
+    });
+});
 
 // Import models
 const Game = require('./models/Game');
@@ -100,6 +138,9 @@ const randomMatchQueue = [];
 const matchmakingUsers = new Map(); // userId -> { user, preferences, socketId, timestamp }
 const activeMatches = new Map(); // matchId -> { player1, player2, gameId }
 
+// Game rooms: { roomId: { players: [socketId, ...], moves: [] } }
+const gameRooms = {};
+
 // Generate random 6-digit team code
 function generateTeamCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -123,7 +164,49 @@ async function findAvailableTeamCode() {
 }
 
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    console.log('New client connected:', socket.id);
+
+    // Join a game room
+    socket.on('joinRoom', ({ roomId }) => {
+        socket.join(roomId);
+        if (!gameRooms[roomId]) {
+            gameRooms[roomId] = { players: [], moves: [] };
+        }
+        gameRooms[roomId].players.push(socket.id);
+        // Notify others
+        io.to(roomId).emit('playerJoined', { playerId: socket.id, players: gameRooms[roomId].players });
+        // Send existing moves to new player
+        socket.emit('syncMoves', gameRooms[roomId].moves);
+    });
+
+    // Handle chess move
+    socket.on('move', ({ roomId, move }) => {
+        if (gameRooms[roomId]) {
+            gameRooms[roomId].moves.push(move);
+            socket.to(roomId).emit('move', move);
+        }
+    });
+
+    // WebRTC signaling relay
+    socket.on('signal', ({ roomId, data }) => {
+        // Relay signaling data to all other players in the room
+        socket.to(roomId).emit('signal', { from: socket.id, data });
+    });
+
+    // Handle disconnect
+    socket.on('disconnect', () => {
+        for (const roomId in gameRooms) {
+            const idx = gameRooms[roomId].players.indexOf(socket.id);
+            if (idx !== -1) {
+                gameRooms[roomId].players.splice(idx, 1);
+                io.to(roomId).emit('playerLeft', { playerId: socket.id });
+                if (gameRooms[roomId].players.length === 0) {
+                    delete gameRooms[roomId];
+                }
+            }
+        }
+        console.log('Client disconnected:', socket.id);
+    });
 
     // Create a new online game
     socket.on('createGame', async (playerName) => {
@@ -305,6 +388,7 @@ io.on('connection', (socket) => {
                 game.board[toRow][toCol] = { type: 'queen', color: move.piece.color };
             }
 
+            move.notation = getMoveNotation(fromRow, fromCol, toRow, toCol, move.piece, move.captured);
             game.moveHistory.push(move);
 
             // Check for game end conditions BEFORE switching currentPlayer
@@ -480,26 +564,23 @@ io.on('connection', (socket) => {
                 playerSockets.delete(socket.id);
                 
                 game.players = game.players.filter(p => p.id !== socket.id);
-                if (game.players.length === 0) {
-                    activeGames.delete(teamCode);
-                } else {
-                    // Add system message about player leaving
-                    if (leavingPlayer) {
-                        addSystemMessage(game, `${leavingPlayer.name} left the game`);
-                    }
-                    
-                    io.to(teamCode).emit('playerLeft', {
-                        message: 'Opponent has left the game'
-                    });
+                
+                // Add system message about player leaving
+                if (leavingPlayer) {
+                    addSystemMessage(game, `${leavingPlayer.name} left the game`);
                 }
+                
+                // End the game for all remaining players
+                io.to(teamCode).emit('gameEnded', {
+                    message: `${leavingPlayer ? leavingPlayer.name : 'A player'} left the game. Game ended.`
+                });
+                
+                // Remove the game from active games
+                activeGames.delete(teamCode);
+                
+                console.log(`Game ${teamCode} ended because ${leavingPlayer ? leavingPlayer.name : 'a player'} left`);
             }
         }
-    });
-
-    // Voice chat signaling relay
-    socket.on('voice-signal', ({ type, offer, answer, candidate, teamCode }) => {
-        // Relay the signaling message to the other player in the same teamCode room
-        socket.to(teamCode).emit('voice-signal', { type, offer, answer, candidate });
     });
 
     // Random matchmaking events
@@ -888,29 +969,10 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Video chat signaling events
-    socket.on('video-offer', (data) => {
-        // data: { teamCode, offer, from }
-        socket.to(data.teamCode).emit('video-offer', {
-            offer: data.offer,
-            from: data.from
-        });
-    });
-
-    socket.on('video-answer', (data) => {
-        // data: { teamCode, answer, from }
-        socket.to(data.teamCode).emit('video-answer', {
-            answer: data.answer,
-            from: data.from
-        });
-    });
-
-    socket.on('ice-candidate', (data) => {
-        // data: { teamCode, candidate, from }
-        socket.to(data.teamCode).emit('ice-candidate', {
-            candidate: data.candidate,
-            from: data.from
-        });
+    // Voice chat signaling relay
+    socket.on('voice-signal', ({ type, offer, answer, candidate, teamCode }) => {
+        // Relay the signaling message to the other player in the same teamCode room
+        socket.to(teamCode).emit('voice-signal', { type, offer, answer, candidate });
     });
 });
 
@@ -1469,6 +1531,24 @@ setInterval(() => {
     const stats = getMatchmakingStats();
     io.emit('matchmakingStats', stats);
 }, 30000);
+
+// Helper to generate algebraic notation for a move
+function getMoveNotation(fromRow, fromCol, toRow, toCol, piece, capturedPiece) {
+    const files = 'abcdefgh';
+    const ranks = '87654321';
+    let notation = '';
+    if (piece.type !== 'pawn') {
+        notation += piece.type.charAt(0).toUpperCase();
+    }
+    if (capturedPiece) {
+        if (piece.type === 'pawn') {
+            notation += files[fromCol];
+        }
+        notation += 'x';
+    }
+    notation += files[toCol] + ranks[toRow];
+    return notation;
+}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {

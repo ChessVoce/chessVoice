@@ -58,6 +58,7 @@
                     </div>
                     <button type="submit" class="auth-btn">Sign In</button>
                 </form>
+                <button id="guest-login-btn" class="auth-btn secondary-btn" style="margin-top: 10px; width: 100%;">Continue as Guest</button>
                 <div class="auth-links">
                     <a href="#" id="forgot-password-link">Forgot Password?</a>
                     <a href="#" id="show-signup-link">Don't have an account? Sign up</a>
@@ -144,6 +145,7 @@
                     </div>
                     <button type="submit" class="auth-btn">Create Account</button>
                 </form>
+                <button id="guest-signup-btn" class="auth-btn secondary-btn" style="margin-top: 10px; width: 100%;">Continue as Guest</button>
                 <div class="auth-links">
                     <a href="#" id="show-login-link">Already have an account? Sign in</a>
                 </div>
@@ -269,7 +271,7 @@
             <div class="header-content">
                 <h1>ChessVoice</h1>
                 <div class="user-profile" id="user-profile">
-                    <img id="user-avatar" src="/default-avatar.png" alt="Profile Picture" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-right:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                    <img id="user-avatar" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMjQiIGZpbGw9IiNFNUU3RUIiLz4KPGNpcmNsZSBjeD0iMjQiIGN5PSIxOCIgcj0iNiIgZmlsbD0iIzk0QTNBRiIvPgo8cGF0aCBkPSJNMTIgMzJDMjAgMjggMjggMzIgMzYgMzJWMzZDMzYgMzguMjA5MSAzNC4yMDkxIDQwIDMyIDQwSDE2QzEzLjc5MDkgNDAgMTIgMzguMjA5MSAxMiAzNlYzMloiIGZpbGw9IiM5NEEzQUYiLz4KPC9zdmc+" alt="Profile Picture" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-right:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                     <div class="user-info">
                         <span id="user-username"></span>
                         <div class="user-stats">
@@ -296,6 +298,7 @@
         </header>
         
         <main>
+            <button id="back-to-auth-btn" class="auth-btn secondary-btn" style="display:none; margin-bottom: 16px; width: 100%;">Back to Login / Sign Up</button>
             <div class="chess-board" id="chess-board"></div>
             <div class="move-history">
                 <h3>Move History</h3>
@@ -332,15 +335,13 @@
             <!-- Multiplayer Controls -->
             <div class="multiplayer-controls">
                 <button id="create-game-btn">Create Online Game</button>
+                <button id="play-robot-btn">Play with Robot</button>
                 <button id="join-game-btn">Join Game</button>
                 <button id="random-match-btn">Find Random Opponent</button>
                 <button id="leave-game-btn" style="display: none;">Leave Game</button>
                 <!-- Voice Chat Controls -->
                 <button id="start-voice-btn" style="display: none;">Start Voice Chat</button>
                 <button id="mute-voice-btn" style="display: none;">Mute</button>
-                <!-- Video Chat Controls -->
-                <button id="start-video-btn" style="display: none;">Start Video Chat</button>
-                <button id="hangup-video-btn" style="display: none;">Hang Up</button>
             </div>
             
             <!-- Team Code Display -->
@@ -478,17 +479,6 @@
         </div>
     </div>
 
-    <div id="video-chat-section" class="video-glass-card" style="display:none;">
-        <div class="video-area">
-            <video id="remote-video" autoplay playsinline class="remote-video"></video>
-            <video id="local-video" autoplay muted playsinline class="local-video"></video>
-        </div>
-        <div class="video-controls">
-            <button id="start-video-btn" class="video-btn gradient-btn"><span class="video-icon">🎥</span> Start Video Chat</button>
-            <button id="hangup-video-btn" class="video-btn hangup-btn gradient-btn"><span class="video-icon">⏹️</span> Hang Up</button>
-        </div>
-    </div>
-
     <!-- Chess Piece and Sound Assets -->
     <audio id="move-sound" src="assets/sounds/move.mp3" preload="auto"></audio>
     <audio id="capture-sound" src="assets/sounds/capture.mp3" preload="auto"></audio>
@@ -497,7 +487,8 @@
     <audio id="game-start-sound" src="assets/sounds/game_start.mp3" preload="auto"></audio>
     <audio id="game-end-sound" src="assets/sounds/game_end.mp3" preload="auto"></audio>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <!-- ChessVoice Main Script -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="chess.js"></script>
 </body>
 </html> 
