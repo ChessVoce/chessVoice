@@ -1,5 +1,5 @@
 const express = require('express');
-const Stockfish = require('stockfish');
+const Stockfish = require('stockfish.wasm');
 const { Chess } = require('chess.js');
 
 const router = express.Router();
@@ -31,33 +31,41 @@ router.post('/move', async (req, res) => {
         return res.json({ fen: game.fen(), robotMove: null, gameOver: true, result: game.result() });
     }
 
-    // Stockfish setup
-    const engine = Stockfish();
+    // Stockfish.wasm setup
+    const engine = await Stockfish();
     let bestMove = null;
-    let resolved = false;
 
-    engine.onmessage = function(event) {
+    function onMessage(event) {
         if (typeof event === 'string' && event.startsWith('bestmove')) {
             bestMove = event.split(' ')[1];
-            if (!resolved) {
-                resolved = true;
-                game.move(bestMove);
-                res.json({ fen: game.fen(), robotMove: bestMove, gameOver: game.game_over(), result: game.result() });
-                engine.terminate && engine.terminate();
-            }
         }
-    };
+    }
+    engine.addMessageListener(onMessage);
 
-    engine.postMessage('uci');
-    engine.postMessage('ucinewgame');
-    engine.postMessage('isready');
-    engine.postMessage('position fen ' + game.fen());
+    await engine.postMessage('uci');
+    await engine.postMessage('ucinewgame');
+    await engine.postMessage('isready');
+    await engine.postMessage('position fen ' + game.fen());
     // Difficulty: set depth (default 10, easy 3, medium 6, hard 12)
     let depth = 10;
     if (difficulty === 'easy') depth = 3;
     else if (difficulty === 'medium') depth = 6;
     else if (difficulty === 'hard') depth = 12;
-    engine.postMessage('go depth ' + depth);
+    await engine.postMessage('go depth ' + depth);
+
+    // Wait for bestMove
+    let tries = 0;
+    while (!bestMove && tries < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        tries++;
+    }
+    engine.removeMessageListener(onMessage);
+    if (engine.terminate) engine.terminate();
+
+    if (bestMove) {
+        game.move({ from: bestMove.slice(0,2), to: bestMove.slice(2,4) });
+    }
+    res.json({ fen: game.fen(), robotMove: bestMove, gameOver: game.game_over(), result: game.result() });
 });
 
 module.exports = router; 
