@@ -687,7 +687,7 @@ class ChessGame {
 
     initializeMultiplayer() {
         // Initialize Socket.IO connection with authentication
-        this.socket = io(this.apiBaseUrl || window.location.origin, {
+        this.socket = io('https://chessvoice-backend.onrender.com', {
             auth: {
                 token: this.authToken
             }
