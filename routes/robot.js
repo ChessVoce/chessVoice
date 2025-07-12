@@ -27,7 +27,7 @@ router.post('/move', async (req, res) => {
     if (!playerMove) return res.status(400).json({ error: 'Invalid move' });
 
     // If game over after player move
-    if (game.game_over()) {
+    if (game.isGameOver()) {
         return res.json({ fen: game.fen(), robotMove: null, gameOver: true, result: game.result() });
     }
 
@@ -65,7 +65,7 @@ router.post('/move', async (req, res) => {
     if (bestMove) {
         game.move({ from: bestMove.slice(0,2), to: bestMove.slice(2,4) });
     }
-    res.json({ fen: game.fen(), robotMove: bestMove, gameOver: game.game_over(), result: game.result() });
+    res.json({ fen: game.fen(), robotMove: bestMove, gameOver: game.isGameOver(), result: game.result() });
 });
 
 module.exports = router; 
