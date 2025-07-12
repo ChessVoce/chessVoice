@@ -107,8 +107,8 @@ class ChessGame {
             // - Railway: 'https://chessvoice-backend.railway.app'
             // - Heroku: 'https://your-app-name.herokuapp.com'
             
-            // TEMPORARY: Show helpful message for deployment
-            const deployedBackendUrl = 'https://chessvoice-backend.onrender.com'; // Replace this!
+            // TODO: Replace this with your actual deployed backend URL
+            const deployedBackendUrl = 'https://your-backend-url-here.com'; // Replace this!
             
             if (deployedBackendUrl === 'https://your-backend-url-here.com') {
                 console.warn('🚨 NETWORK ERROR: Backend not deployed yet!');
@@ -119,7 +119,7 @@ class ChessGame {
                 
                 // Show user-friendly error message
                 this.showAuthError('Backend not deployed yet. Please deploy your backend first. Check deploy-instructions.md for help.');
-                return ''; // This will cause network errors, but that's expected
+                return window.location.origin; // Use current origin as fallback
             }
             
             return deployedBackendUrl;
