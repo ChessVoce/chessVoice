@@ -1337,57 +1337,55 @@ class ChessGame {
 
     // Update makeMove to use the new animation
     async makeMove(fromRow, fromCol, toRow, toCol) {
-        if (this.gameOver) {
-            console.log('[DEBUG] makeMove: gameOver is true, move not executed');
-            return;
-        }
+        if (this.gameOver) return;
+        
         const piece = this.board[fromRow][fromCol];
+        if (!piece || piece.color !== this.currentPlayer) return;
+        
+        if (!this.isValidMove(fromRow, fromCol, toRow, toCol)) return;
+        
+        // Store piece info before moving for robot notation
+        const originalPiece = { ...piece };
         const capturedPiece = this.board[toRow][toCol];
-        // Track captured pieces
-        // if (capturedPiece) {
-        //     if (capturedPiece.color === 'white') {
-        //         this.capturedWhite.push(capturedPiece);
-        //     } else {
-        //         this.capturedBlack.push(capturedPiece);
-        //     }
-        // }
-        // Animate with absolute floating image
-        await this.animatePieceMoveAbsolute(fromRow, fromCol, toRow, toCol);
-        // Play sound
-        // if (capturedPiece) {
-        //     this.playSound('capture-sound');
-        // } else {
-        //     this.playSound('move-sound');
-        // }
-        // ... rest of makeMove logic unchanged ...
-        const move = {
-            piece: piece,
-            from: [fromRow, fromCol],
-            to: [toRow, toCol],
-            captured: capturedPiece,
-            notation: this.getMoveNotation(fromRow, fromCol, toRow, toCol, piece, capturedPiece)
-        };
-        this.moveHistory.push(move);
+        
+        // Make the move
         this.board[toRow][toCol] = piece;
         this.board[fromRow][fromCol] = null;
-        if (piece.type === 'pawn' && (toRow === 0 || toRow === 7)) {
-            this.board[toRow][toCol] = { type: 'queen', color: piece.color };
-        }
+        
+        // Update move history
+        const moveNotation = this.getMoveNotation(fromRow, fromCol, toRow, toCol, originalPiece, capturedPiece);
+        this.moveHistory.push({
+            from: [fromRow, fromCol],
+            to: [toRow, toCol],
+            piece: piece.type,
+            notation: moveNotation,
+            player: this.currentPlayer
+        });
+        
+        // Switch players
         this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
-        this.checkGameEnd();
+        
+        // Clear selection
+        this.selectedSquare = null;
+        this.clearHighlights();
+        
+        // Animate the move
+        await this.animatePieceMoveAbsolute(fromRow, fromCol, toRow, toCol);
+        
+        // Update UI
         this.renderBoard();
         this.updateGameInfo();
         this.updateMoveHistory();
 
         // If playing against robot, send move to backend and get robot move
         if (this.isRobotGame && this.robotGameId) {
-            const moveNotation = this.getMoveNotation(fromRow, fromCol, toRow, toCol, this.board[fromRow][fromCol], this.board[toRow][toCol]);
+            const robotMoveNotation = this.getMoveNotation(fromRow, fromCol, toRow, toCol, originalPiece, capturedPiece);
             const res = await fetch(`${this.apiBaseUrl}/api/robot/move`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     gameId: this.robotGameId,
-                    move: moveNotation,
+                    move: robotMoveNotation,
                     difficulty: this.robotDifficulty
                 })
             });
@@ -1464,6 +1462,12 @@ class ChessGame {
     }
 
     getMoveNotation(fromRow, fromCol, toRow, toCol, piece, capturedPiece) {
+        // Add null checks
+        if (!piece) {
+            console.warn('getMoveNotation: piece is null or undefined');
+            return '??';
+        }
+        
         const files = 'abcdefgh';
         const ranks = '87654321';
         
