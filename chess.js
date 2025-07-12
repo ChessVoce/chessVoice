@@ -1396,14 +1396,36 @@ class ChessGame {
             }
             // Update board with robot move
             if (data.robotMove) {
-                // Parse robot move notation and update board
-                // (Assume move is in UCI format, e.g., e2e4)
+                // Parse robot move notation and update board directly (avoid recursive makeMove)
                 const from = data.robotMove.slice(0,2);
                 const to = data.robotMove.slice(2,4);
                 const fromCoords = this.notationToCoords(from);
                 const toCoords = this.notationToCoords(to);
                 if (fromCoords && toCoords) {
-                    await this.makeMove(fromCoords[0], fromCoords[1], toCoords[0], toCoords[1]);
+                    // Directly update board for robot move
+                    const robotPiece = this.board[fromCoords[0]][fromCoords[1]];
+                    if (robotPiece) {
+                        this.board[toCoords[0]][toCoords[1]] = robotPiece;
+                        this.board[fromCoords[0]][fromCoords[1]] = null;
+                        
+                        // Update move history
+                        const robotMoveNotation = this.getMoveNotation(fromCoords[0], fromCoords[1], toCoords[0], toCoords[1], robotPiece, null);
+                        this.moveHistory.push({
+                            from: [fromCoords[0], fromCoords[1]],
+                            to: [toCoords[0], toCoords[1]],
+                            piece: robotPiece.type,
+                            notation: robotMoveNotation,
+                            player: this.currentPlayer
+                        });
+                        
+                        // Switch players back
+                        this.currentPlayer = this.currentPlayer === 'white' ? 'black' : 'white';
+                        
+                        // Update UI
+                        this.renderBoard();
+                        this.updateGameInfo();
+                        this.updateMoveHistory();
+                    }
                 }
             }
             if (data.gameOver) {
