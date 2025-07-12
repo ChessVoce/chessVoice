@@ -130,7 +130,7 @@ class ChessGame {
         // Check if user is already authenticated
         if (this.authToken) {
             try {
-                const response = await fetch(`${this.apiBaseUrl}/api/auth/me`, {
+                const response = await fetch('https://chessvoice-backend.onrender.com/api/auth/me', {
                     headers: {
                         'Authorization': `Bearer ${this.authToken}`
                     }
@@ -315,7 +315,7 @@ class ChessGame {
         this.setLoadingState(submitBtn, true);
 
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+            const response = await fetch('https://chessvoice-backend.onrender.com/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -386,7 +386,7 @@ class ChessGame {
         this.setLoadingState(submitBtn, true);
 
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/auth/signup`, {
+            const response = await fetch('https://chessvoice-backend.onrender.com/api/auth/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -439,7 +439,7 @@ class ChessGame {
                 requestBody.method = method;
             }
 
-            const response = await fetch(`${this.apiBaseUrl}/api/auth/forgot-password`, {
+            const response = await fetch('https://chessvoice-backend.onrender.com/api/auth/forgot-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -490,7 +490,7 @@ class ChessGame {
         this.setLoadingState(submitBtn, true);
 
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/auth/reset-password`, {
+            const response = await fetch('https://chessvoice-backend.onrender.com/api/auth/reset-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -522,7 +522,7 @@ class ChessGame {
     async handleLogout() {
         try {
             if (this.authToken) {
-                await fetch(`${this.apiBaseUrl}/api/auth/logout`, {
+                await fetch('https://chessvoice-backend.onrender.com/api/auth/logout', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${this.authToken}`
@@ -1380,7 +1380,7 @@ class ChessGame {
         // If playing against robot, send move to backend and get robot move
         if (this.isRobotGame && this.robotGameId) {
             const robotMoveNotation = this.getMoveNotation(fromRow, fromCol, toRow, toCol, originalPiece, capturedPiece);
-            const res = await fetch(`${this.apiBaseUrl}/api/robot/move`, {
+            const res = await fetch('https://chessvoice-backend.onrender.com/api/robot/move', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2540,7 +2540,7 @@ class ChessGame {
                 if (file) {
                     const formData = new FormData();
                     formData.append('profilePicture', file);
-                    const res = await fetch(`${this.apiBaseUrl}/api/auth/upload-profile-picture`, {
+                    const res = await fetch('https://chessvoice-backend.onrender.com/api/auth/upload-profile-picture', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${this.authToken}` },
                         body: formData
@@ -2562,7 +2562,7 @@ class ChessGame {
                 if (email) body.email = email;
                 if (phoneNumber) body.phoneNumber = phoneNumber;
                 if (Object.keys(body).length > 0) {
-                    const res = await fetch(`${this.apiBaseUrl}/api/auth/update-info`, {
+                    const res = await fetch('https://chessvoice-backend.onrender.com/api/auth/update-info', {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2647,7 +2647,7 @@ class ChessGame {
             }
             messageDiv.textContent = 'Changing password...';
             try {
-                const res = await fetch(`${this.apiBaseUrl}/api/auth/change-password`, {
+                const res = await fetch('https://chessvoice-backend.onrender.com/api/auth/change-password', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2906,7 +2906,7 @@ class ChessGame {
         // Ask for difficulty
         const difficulty = prompt('Choose robot difficulty: easy, medium, hard', 'medium') || 'medium';
         // Start new game with robot
-        const response = await fetch(`${this.apiBaseUrl}/api/robot/new-game`, { method: 'POST' });
+        const response = await fetch('https://chessvoice-backend.onrender.com/api/robot/new-game', { method: 'POST' });
         const data = await response.json();
         this.robotGameId = data.gameId;
         this.isRobotGame = true;
