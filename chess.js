@@ -1397,10 +1397,13 @@ class ChessGame {
             // Update board with robot move
             if (data.robotMove) {
                 // Parse robot move notation and update board directly (avoid recursive makeMove)
-                const from = data.robotMove.slice(0,2);
-                const to = data.robotMove.slice(2,4);
-                const fromCoords = this.notationToCoords(from);
-                const toCoords = this.notationToCoords(to);
+                const fromSquare = data.robotMove.slice(0, 2);
+                const toSquare = data.robotMove.slice(2, 4);
+                
+                // Convert algebraic notation to coordinates
+                const fromCoords = this.algebraicToCoords(fromSquare);
+                const toCoords = this.algebraicToCoords(toSquare);
+                
                 if (fromCoords && toCoords) {
                     // Directly update board for robot move
                     const robotPiece = this.board[fromCoords[0]][fromCoords[1]];
@@ -1436,10 +1439,26 @@ class ChessGame {
     }
 
     notationToCoords(notation) {
-        // Convert algebraic notation (e.g., e2) to [row, col]
-        if (!notation || notation.length !== 2) return null;
+        // Convert UCI notation (e.g., e2e4) to [row, col]
+        // Stockfish returns moves in UCI format: fromSquare + toSquare (e.g., "e2e4")
+        if (!notation || notation.length !== 4) return null;
+        
+        // Extract the from square (first 2 characters)
+        const fromSquare = notation.slice(0, 2);
+        
         const file = notation.charCodeAt(0) - 'a'.charCodeAt(0);
         const rank = 8 - parseInt(notation[1]);
+        if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
+        return [rank, file];
+    }
+
+    algebraicToCoords(square) {
+        // Convert algebraic notation (e.g., "e2") to [row, col]
+        if (!square || square.length !== 2) return null;
+        
+        const file = square.charCodeAt(0) - 'a'.charCodeAt(0);
+        const rank = 8 - parseInt(square[1]);
+        
         if (file < 0 || file > 7 || rank < 0 || rank > 7) return null;
         return [rank, file];
     }
