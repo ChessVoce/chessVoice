@@ -2961,7 +2961,7 @@ class ChessGame {
         this.robotGameId = data.gameId;
         this.isRobotGame = true;
         this.robotDifficulty = difficulty;
-        this.board = this.initializeBoard(); // Reset board UI
+        this.board = this.fenToBoard(data.fen); // Use backend FEN
         this.currentPlayer = 'white';
         this.selectedSquare = null;
         this.moveHistory = [];
@@ -2969,6 +2969,39 @@ class ChessGame {
         this.renderBoard();
         this.updateGameInfo();
         this.showNotification('Playing against Robot (' + difficulty + ')', 'info');
+    }
+
+    // Utility: Parse FEN string to board array
+    fenToBoard(fen) {
+        const rows = fen.split(' ')[0].split('/');
+        const board = [];
+        const pieceMap = {
+            k: { type: 'king', color: 'black' },
+            q: { type: 'queen', color: 'black' },
+            r: { type: 'rook', color: 'black' },
+            b: { type: 'bishop', color: 'black' },
+            n: { type: 'knight', color: 'black' },
+            p: { type: 'pawn', color: 'black' },
+            K: { type: 'king', color: 'white' },
+            Q: { type: 'queen', color: 'white' },
+            R: { type: 'rook', color: 'white' },
+            B: { type: 'bishop', color: 'white' },
+            N: { type: 'knight', color: 'white' },
+            P: { type: 'pawn', color: 'white' }
+        };
+        for (let r = 0; r < 8; r++) {
+            const row = [];
+            let i = 0;
+            for (const char of rows[r]) {
+                if (/[1-8]/.test(char)) {
+                    for (let j = 0; j < parseInt(char); j++) row.push(null);
+                } else {
+                    row.push({ ...pieceMap[char] });
+                }
+            }
+            board.push(row);
+        }
+        return board;
     }
 }
 
