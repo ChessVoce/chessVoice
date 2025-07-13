@@ -1,11 +1,135 @@
 const express = require('express');
-const Stockfish = require('stockfish');
+// const Stockfish = require('stockfish');
 const { Chess } = require('chess.js');
 
 const router = express.Router();
 
 // In-memory store for games (for demo; use DB for production)
 const robotGames = {};
+
+// Simple chess engine that generates reasonable moves
+class SimpleChessEngine {
+    constructor() {
+        this.pieceValues = {
+            'p': 1,   // pawn
+            'n': 3,   // knight
+            'b': 3,   // bishop
+            'r': 5,   // rook
+            'q': 9,   // queen
+            'k': 0    // king (infinite value, but we don't want to lose it)
+        };
+    }
+
+    // Get all legal moves for a color
+    getLegalMoves(game, color) {
+        const moves = [];
+        const board = game.board();
+        
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                const piece = board[i][j];
+                if (piece && piece.color === color) {
+                    const square = String.fromCharCode(97 + j) + (8 - i);
+                    const legalMoves = game.moves({ square, verbose: true });
+                    moves.push(...legalMoves);
+                }
+            }
+        }
+        return moves;
+    }
+
+    // Evaluate board position (positive for white, negative for black)
+    evaluatePosition(game) {
+        const board = game.board();
+        let score = 0;
+        
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                const piece = board[i][j];
+                if (piece) {
+                    const value = this.pieceValues[piece.type];
+                    if (piece.color === 'w') {
+                        score += value;
+                    } else {
+                        score -= value;
+                    }
+                }
+            }
+        }
+        return score;
+    }
+
+    // Get best move using simple evaluation
+    getBestMove(game, difficulty = 'medium') {
+        const color = game.turn();
+        const legalMoves = this.getLegalMoves(game, color);
+        
+        if (legalMoves.length === 0) return null;
+        
+        let bestMove = null;
+        let bestScore = color === 'w' ? -Infinity : Infinity;
+        
+        // Adjust search depth based on difficulty
+        const maxDepth = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 3;
+        
+        for (const move of legalMoves) {
+            // Make the move
+            game.move(move);
+            
+            // Evaluate the resulting position
+            const score = this.minimax(game, maxDepth - 1, -Infinity, Infinity, color === 'w');
+            
+            // Undo the move
+            game.undo();
+            
+            // Update best move
+            if (color === 'w' && score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            } else if (color === 'b' && score < bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+        
+        return bestMove;
+    }
+
+    // Simple minimax with alpha-beta pruning
+    minimax(game, depth, alpha, beta, maximizingPlayer) {
+        if (depth === 0 || game.isGameOver()) {
+            return this.evaluatePosition(game);
+        }
+        
+        const legalMoves = this.getLegalMoves(game, game.turn());
+        
+        if (maximizingPlayer) {
+            let maxEval = -Infinity;
+            for (const move of legalMoves) {
+                game.move(move);
+                const eval = this.minimax(game, depth - 1, alpha, beta, false);
+                game.undo();
+                maxEval = Math.max(maxEval, eval);
+                alpha = Math.max(alpha, eval);
+                if (beta <= alpha) break;
+            }
+            return maxEval;
+        } else {
+            let minEval = Infinity;
+            for (const move of legalMoves) {
+                game.move(move);
+                const eval = this.minimax(game, depth - 1, alpha, beta, true);
+                game.undo();
+                minEval = Math.min(minEval, eval);
+                beta = Math.min(beta, eval);
+                if (beta <= alpha) break;
+            }
+            return minEval;
+        }
+    }
+}
+
+const engine = new SimpleChessEngine();
 
 // Start a new game with robot
 router.post('/new-game', (req, res) => {
@@ -31,41 +155,19 @@ router.post('/move', async (req, res) => {
         return res.json({ fen: game.fen(), robotMove: null, gameOver: true, result: game.result() });
     }
 
-    // Stockfish.wasm setup
-    const engine = await Stockfish();
-    let bestMove = null;
-
-    function onMessage(event) {
-        if (typeof event === 'string' && event.startsWith('bestmove')) {
-            bestMove = event.split(' ')[1];
-        }
+    // Get robot move using our simple engine
+    const robotMove = engine.getBestMove(game, difficulty);
+    
+    if (robotMove) {
+        game.move(robotMove);
     }
-    engine.addMessageListener(onMessage);
-
-    await engine.postMessage('uci');
-    await engine.postMessage('ucinewgame');
-    await engine.postMessage('isready');
-    await engine.postMessage('position fen ' + game.fen());
-    // Difficulty: set depth (default 10, easy 3, medium 6, hard 12)
-    let depth = 10;
-    if (difficulty === 'easy') depth = 3;
-    else if (difficulty === 'medium') depth = 6;
-    else if (difficulty === 'hard') depth = 12;
-    await engine.postMessage('go depth ' + depth);
-
-    // Wait for bestMove
-    let tries = 0;
-    while (!bestMove && tries < 50) {
-        await new Promise(r => setTimeout(r, 100));
-        tries++;
-    }
-    engine.removeMessageListener(onMessage);
-    if (engine.terminate) engine.terminate();
-
-    if (bestMove) {
-        game.move({ from: bestMove.slice(0,2), to: bestMove.slice(2,4) });
-    }
-    res.json({ fen: game.fen(), robotMove: bestMove, gameOver: game.isGameOver(), result: game.result() });
+    
+    res.json({ 
+        fen: game.fen(), 
+        robotMove: robotMove ? robotMove.from + robotMove.to : null, 
+        gameOver: game.isGameOver(), 
+        result: game.result() 
+    });
 });
 
 module.exports = router; 
