@@ -1363,6 +1363,9 @@ class ChessGame {
         this.updateGameInfo();
         this.updateMoveHistory();
 
+        // Check for game end conditions (checkmate, stalemate)
+        this.checkGameEnd();
+
         // If playing against robot, send move to backend and get robot move
         if (this.isRobotGame && this.robotGameId) {
             const robotMoveNotation = this.getMoveNotation(fromRow, fromCol, toRow, toCol, originalPiece, capturedPiece);
@@ -1414,6 +1417,9 @@ class ChessGame {
                         this.renderBoard();
                         this.updateGameInfo();
                         this.updateMoveHistory();
+                        
+                        // Check for game end conditions after robot move
+                        this.checkGameEnd();
                     }
                 }
             }
@@ -1674,14 +1680,14 @@ class ChessGame {
     }
 
     isCheckmate(color) {
-        // Check if any legal move exists
+        // Check if any legal move exists for the specified color
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = this.board[row][col];
                 if (piece && piece.color === color) {
                     for (let toRow = 0; toRow < 8; toRow++) {
                         for (let toCol = 0; toCol < 8; toCol++) {
-                            if (this.isValidMove(row, col, toRow, toCol)) {
+                            if (this.isValidMoveForColor(row, col, toRow, toCol, color)) {
                                 return false;
                             }
                         }
@@ -1695,14 +1701,14 @@ class ChessGame {
     isStalemate(color) {
         if (this.isKingInCheck(this.board, color)) return false;
         
-        // Check if any legal move exists
+        // Check if any legal move exists for the specified color
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = this.board[row][col];
                 if (piece && piece.color === color) {
                     for (let toRow = 0; toRow < 8; toRow++) {
                         for (let toCol = 0; toCol < 8; toCol++) {
-                            if (this.isValidMove(row, col, toRow, toCol)) {
+                            if (this.isValidMoveForColor(row, col, toRow, toCol, color)) {
                                 return false;
                             }
                         }
@@ -2735,6 +2741,57 @@ class ChessGame {
         this.board[toRow][toCol] = originalTo;
         if (!kingSafe) {
             //console.log('[DEBUG] isValidMove: move would leave king in check');
+            return false;
+        }
+        return true;
+    }
+
+    isValidMoveForColor(fromRow, fromCol, toRow, toCol, color) {
+        if (this.gameOver) {
+            return false;
+        }
+        const piece = this.board[fromRow][fromCol];
+        if (!piece || piece.color !== color) return false;
+        // Prevent moving to the same square
+        if (fromRow === toRow && fromCol === toCol) return false;
+        const targetPiece = this.board[toRow][toCol];
+        if (targetPiece && targetPiece.color === piece.color) return false;
+        // Check if the move is valid for the piece type
+        let valid = false;
+        switch (piece.type) {
+            case 'pawn':
+                valid = this.isValidPawnMove(fromRow, fromCol, toRow, toCol, piece.color);
+                break;
+            case 'rook':
+                valid = this.isValidRookMove(fromRow, fromCol, toRow, toCol);
+                break;
+            case 'knight':
+                valid = this.isValidKnightMove(fromRow, fromCol, toRow, toCol);
+                break;
+            case 'bishop':
+                valid = this.isValidBishopMove(fromRow, fromCol, toRow, toCol);
+                break;
+            case 'queen':
+                valid = this.isValidQueenMove(fromRow, fromCol, toRow, toCol);
+                break;
+            case 'king':
+                valid = this.isValidKingMove(fromRow, fromCol, toRow, toCol);
+                break;
+            default:
+                valid = false;
+        }
+        if (!valid) return false;
+        // Simulate the move and check king safety
+        const originalFrom = this.board[fromRow][fromCol];
+        const originalTo = this.board[toRow][toCol];
+        this.board[toRow][toCol] = this.board[fromRow][fromCol];
+        this.board[fromRow][fromCol] = null;
+        // Find the color to check (for isCheckmate, this may not be currentPlayer)
+        const kingSafe = !this.isKingInCheck(this.board, color);
+        // Revert the move
+        this.board[fromRow][fromCol] = originalFrom;
+        this.board[toRow][toCol] = originalTo;
+        if (!kingSafe) {
             return false;
         }
         return true;
