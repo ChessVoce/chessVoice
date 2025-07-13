@@ -1667,6 +1667,8 @@ class ChessGame {
                 this.updateGameInfo();
                 return;
             }
+            // Highlight the king in check (the player who is in check)
+            this.highlightKingInCheck(this.currentPlayer);
         } else if (this.isStalemate(this.currentPlayer)) {
             this.gameOver = true;
             console.log('[DEBUG] gameOver set to true (stalemate)');
@@ -1674,9 +1676,10 @@ class ChessGame {
             this.renderBoard();
             this.updateGameInfo();
             return;
+        } else {
+            // No check, so no king should be highlighted
+            this.highlightKingInCheck(null);
         }
-        // Highlight king in check
-        this.highlightKingInCheck();
     }
 
     isCheckmate(color) {
@@ -1719,13 +1722,17 @@ class ChessGame {
         return true;
     }
 
-    highlightKingInCheck() {
+    highlightKingInCheck(color) {
+        // Remove all previous check highlights
+        const squares = document.querySelectorAll('.square');
+        squares.forEach(square => square.classList.remove('check'));
+        if (!color) return;
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 const piece = this.board[row][col];
-                if (piece && piece.type === 'king' && piece.color === this.currentPlayer) {
+                if (piece && piece.type === 'king' && piece.color === color) {
                     this.highlightSquare(row, col, 'check');
-                    break;
+                    return;
                 }
             }
         }
