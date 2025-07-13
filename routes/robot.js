@@ -1,5 +1,5 @@
 const express = require('express');
-const Stockfish = require('stockfish.wasm');
+const Stockfish = require('stockfish');
 const { Chess } = require('chess.js');
 
 const router = express.Router();
