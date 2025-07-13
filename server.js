@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (for rate limiting, IP, etc.)
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
