@@ -819,7 +819,11 @@ class ChessGame {
             // Redirect to home page if user is authenticated (not guest)
             if (this.currentUser && this.authToken) {
                 console.log('[DEBUG] gameEnded: redirecting to home page');
-                this.showAuthInterface();
+                if (typeof this.showHomePage === 'function') {
+                    this.showHomePage();
+                } else {
+                    this.showGameInterface(); // fallback to main game interface
+                }
                 this.showNotification('Game ended. Returned to home page', 'info');
             } else {
                 // For guest users, just show a notification that they're back to local play
@@ -2907,7 +2911,11 @@ class ChessGame {
         // Redirect to home page if user is authenticated (not guest)
         if (this.currentUser && this.authToken) {
             console.log('[DEBUG] leaveGame: redirecting to home page');
-            this.showAuthInterface();
+            if (typeof this.showHomePage === 'function') {
+                this.showHomePage();
+            } else {
+                this.showGameInterface(); // fallback to main game interface
+            }
             this.showNotification('Returned to home page', 'info');
         } else {
             // For guest users, just show a notification that they're back to local play
