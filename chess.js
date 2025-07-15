@@ -1168,25 +1168,20 @@ class ChessGame {
         const piece = this.board[row][col];
         // Multiplayer: Only allow moving your own pieces and only on your turn
         if (this.isMultiplayer) {
-            console.log('[DEBUG] handleSquareClick: multiplayer mode');
-            console.log('[DEBUG] playerColor:', this.playerColor);
-            console.log('[DEBUG] currentPlayer:', this.currentPlayer);
-            console.log('[DEBUG] isMultiplayer:', this.isMultiplayer);
-            
+            console.log(`[DEBUG] handleSquareClick: multiplayer mode, playerColor=${this.playerColor}, currentPlayer=${this.currentPlayer}, isMultiplayer=${this.isMultiplayer}`);
             if (!this.playerColor || this.playerColor !== this.currentPlayer) {
-                console.log('[DEBUG] handleSquareClick: not your turn or playerColor not set');
-                console.log('[DEBUG] playerColor:', this.playerColor, 'currentPlayer:', this.currentPlayer);
+                console.log('[DEBUG] handleSquareClick: not your turn or playerColor not set', 'playerColor:', this.playerColor, 'currentPlayer:', this.currentPlayer);
                 return;
             }
             if (!this.selectedSquare) {
                 if (piece && piece.color === this.playerColor) {
-                    console.log('[DEBUG] handleSquareClick: selecting piece at', row, col);
+                    console.log(`[DEBUG] handleSquareClick: selecting piece at [${row},${col}]`);
                     this.selectedSquare = [row, col];
                     this.clearHighlights();
                     this.highlightSquare(row, col, 'selected');
                     this.highlightValidMoves(row, col);
                 } else {
-                    console.log('[DEBUG] handleSquareClick: cannot select piece - piece:', piece, 'playerColor:', this.playerColor);
+                    console.log(`[DEBUG] handleSquareClick: cannot select piece at [${row},${col}] - piece:`, piece, 'playerColor:', this.playerColor);
                 }
             } else {
                 const [fromRow, fromCol] = this.selectedSquare;
@@ -1198,12 +1193,13 @@ class ChessGame {
                 // Only allow moving your own piece
                 const fromPiece = this.board[fromRow][fromCol];
                 if (!fromPiece || fromPiece.color !== this.playerColor) {
+                    console.log(`[DEBUG] handleSquareClick: selected piece at [${fromRow},${fromCol}] is not your piece or missing`);
                     this.selectedSquare = null;
                     this.clearHighlights();
                     return;
                 }
                 if (this.isValidMove(fromRow, fromCol, row, col)) {
-                    console.log('[DEBUG] handleSquareClick: making move from', fromRow, fromCol, 'to', row, col);
+                    console.log(`[DEBUG] handleSquareClick: making move from [${fromRow},${fromCol}] to [${row},${col}]`);
                     // Emit move to server, do not update board locally
                     if (this.socket) {
                         this.socket.emit('makeMove', { fromRow, fromCol, toRow: row, toCol: col });
@@ -1211,7 +1207,7 @@ class ChessGame {
                     this.selectedSquare = null;
                     this.clearHighlights();
                 } else {
-                    console.log('[DEBUG] handleSquareClick: invalid move');
+                    console.log(`[DEBUG] handleSquareClick: invalid move from [${fromRow},${fromCol}] to [${row},${col}]`);
                     // If clicked another of your own pieces, select it
                     if (piece && piece.color === this.playerColor) {
                         this.selectedSquare = [row, col];
@@ -2705,11 +2701,20 @@ class ChessGame {
             return false;
         }
         const piece = this.board[fromRow][fromCol];
-        if (!piece || piece.color !== this.currentPlayer) return false;
+        if (!piece || piece.color !== this.currentPlayer) {
+            console.log(`[DEBUG] isValidMove: no piece or not current player's piece at [${fromRow},${fromCol}]`);
+            return false;
+        }
         // Prevent moving to the same square
-        if (fromRow === toRow && fromCol === toCol) return false;
+        if (fromRow === toRow && fromCol === toCol) {
+            console.log('[DEBUG] isValidMove: cannot move to the same square');
+            return false;
+        }
         const targetPiece = this.board[toRow][toCol];
-        if (targetPiece && targetPiece.color === piece.color) return false;
+        if (targetPiece && targetPiece.color === piece.color) {
+            console.log(`[DEBUG] isValidMove: cannot capture own piece at [${toRow},${toCol}]`);
+            return false;
+        }
         // Check if the move is valid for the piece type
         let valid = false;
         switch (piece.type) {
@@ -2734,7 +2739,10 @@ class ChessGame {
             default:
                 valid = false;
         }
-        if (!valid) return false;
+        if (!valid) {
+            console.log(`[DEBUG] isValidMove: piece type ${piece.type} move from [${fromRow},${fromCol}] to [${toRow},${toCol}] is not valid`);
+            return false;
+        }
         // Simulate the move and check king safety
         const originalFrom = this.board[fromRow][fromCol];
         const originalTo = this.board[toRow][toCol];
@@ -2747,7 +2755,7 @@ class ChessGame {
         this.board[fromRow][fromCol] = originalFrom;
         this.board[toRow][toCol] = originalTo;
         if (!kingSafe) {
-            //console.log('[DEBUG] isValidMove: move would leave king in check');
+            console.log('[DEBUG] isValidMove: move would leave king in check');
             return false;
         }
         return true;

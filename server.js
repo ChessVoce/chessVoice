@@ -450,6 +450,18 @@ io.on('connection', (socket) => {
             console.log(`Move made: ${player.name} moved from [${fromRow},${fromCol}] to [${toRow},${toCol}]`);
         } else {
             console.log(`Invalid move: ${player.name} tried invalid move from [${fromRow},${fromCol}] to [${toRow},${toCol}]`);
+            // Add more debug info
+            const piece = game.board[fromRow][fromCol];
+            const targetPiece = game.board[toRow][toCol];
+            if (!piece) {
+                console.log(`[DEBUG] Backend: No piece at [${fromRow},${fromCol}]`);
+            } else if (piece.color !== game.currentPlayer) {
+                console.log(`[DEBUG] Backend: Piece at [${fromRow},${fromCol}] is not current player's piece (${piece.color} vs ${game.currentPlayer})`);
+            } else if (targetPiece && targetPiece.color === piece.color) {
+                console.log(`[DEBUG] Backend: Cannot capture own piece at [${toRow},${toCol}]`);
+            } else {
+                console.log(`[DEBUG] Backend: Move rejected by isValidMove logic for piece type ${piece ? piece.type : 'none'}`);
+            }
         }
     });
 
@@ -1005,29 +1017,45 @@ function initializeChessBoard() {
 
 function isValidMove(board, fromRow, fromCol, toRow, toCol, currentPlayer) {
     const piece = board[fromRow][fromCol];
-    if (!piece || piece.color !== currentPlayer) return false;
-
+    if (!piece || piece.color !== currentPlayer) {
+        console.log(`[DEBUG] isValidMove: No piece or not current player's piece at [${fromRow},${fromCol}]`);
+        return false;
+    }
     // Check if destination has own piece
     const targetPiece = board[toRow][toCol];
-    if (targetPiece && targetPiece.color === piece.color) return false;
-
+    if (targetPiece && targetPiece.color === piece.color) {
+        console.log(`[DEBUG] isValidMove: Cannot capture own piece at [${toRow},${toCol}]`);
+        return false;
+    }
     // Basic chess move validation
+    let valid = false;
     switch (piece.type) {
         case 'pawn':
-            return isValidPawnMove(board, fromRow, fromCol, toRow, toCol, currentPlayer);
+            valid = isValidPawnMove(board, fromRow, fromCol, toRow, toCol, currentPlayer);
+            break;
         case 'rook':
-            return isValidRookMove(board, fromRow, fromCol, toRow, toCol);
+            valid = isValidRookMove(board, fromRow, fromCol, toRow, toCol);
+            break;
         case 'knight':
-            return isValidKnightMove(fromRow, fromCol, toRow, toCol);
+            valid = isValidKnightMove(fromRow, fromCol, toRow, toCol);
+            break;
         case 'bishop':
-            return isValidBishopMove(board, fromRow, fromCol, toRow, toCol);
+            valid = isValidBishopMove(board, fromRow, fromCol, toRow, toCol);
+            break;
         case 'queen':
-            return isValidQueenMove(board, fromRow, fromCol, toRow, toCol);
+            valid = isValidQueenMove(board, fromRow, fromCol, toRow, toCol);
+            break;
         case 'king':
-            return isValidKingMove(fromRow, fromCol, toRow, toCol);
+            valid = isValidKingMove(fromRow, fromCol, toRow, toCol);
+            break;
         default:
-            return false;
+            valid = false;
     }
+    if (!valid) {
+        console.log(`[DEBUG] isValidMove: Piece type ${piece.type} move from [${fromRow},${fromCol}] to [${toRow},${toCol}] is not valid`);
+        return false;
+    }
+    return true;
 }
 
 function isValidPawnMove(board, fromRow, fromCol, toRow, toCol, currentPlayer) {
