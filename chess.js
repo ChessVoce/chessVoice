@@ -1797,8 +1797,17 @@ class ChessGame {
             this.leaveGame();
             return; // leaveGame() will call newGame() again after cleanup
         }
-        
-        // Reset game state
+        // If the game just ended (gameOver) and user is authenticated, redirect to homepage
+        if (this.gameOver && this.currentUser && this.authToken) {
+            if (typeof this.showHomePage === 'function') {
+                this.showHomePage();
+            } else {
+                this.showGameInterface(); // fallback
+            }
+            this.showNotification('Returned to home page', 'info');
+            return;
+        }
+        // ... rest of newGame logic ...
         this.board = this.initializeBoard();
         this.currentPlayer = 'white';
         this.selectedSquare = null;
@@ -1809,33 +1818,23 @@ class ChessGame {
         this.playerColor = null;
         this.opponentName = null;
         this.chatMessages = [];
-        
         // Clear highlights and update UI
         this.clearHighlights();
         this.renderBoard();
         this.updateGameInfo();
         this.updateMoveHistory();
-        
         // Reset multiplayer UI
         this.setMultiplayerStatus(false);
-        
         // Clear chat
         if (this.chatMessagesContainer) {
             this.chatMessagesContainer.innerHTML = '';
         }
-        
         // Hide checkmate modal if it's open
         const modal = document.getElementById('checkmate-modal');
         if (modal) {
             modal.style.display = 'none';
         }
-        
-        // 4. Reset captured pieces in newGame
-        // this.capturedWhite = [];
-        // this.capturedBlack = [];
-        
         console.log('New game started');
-        // this.renderCapturedPieces();
     }
 
     showCheckmateModal(winner) {
