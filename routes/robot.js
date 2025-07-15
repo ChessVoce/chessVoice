@@ -107,10 +107,12 @@ class SimpleChessEngine {
             let maxEval = -Infinity;
             for (const move of legalMoves) {
                 game.move(move);
-                const eval = this.minimax(game, depth - 1, alpha, beta, false);
+                const evaluation = this.minimax(game, depth - 1, alpha, beta, false);
                 game.undo();
-                maxEval = Math.max(maxEval, eval);
-                alpha = Math.max(alpha, eval);
+                if (evaluation > maxEval) {
+                    maxEval = evaluation;
+                }
+                alpha = Math.max(alpha, evaluation);
                 if (beta <= alpha) break;
             }
             return maxEval;
@@ -118,10 +120,12 @@ class SimpleChessEngine {
             let minEval = Infinity;
             for (const move of legalMoves) {
                 game.move(move);
-                const eval = this.minimax(game, depth - 1, alpha, beta, true);
+                const evaluation = this.minimax(game, depth - 1, alpha, beta, true);
                 game.undo();
-                minEval = Math.min(minEval, eval);
-                beta = Math.min(beta, eval);
+                if (evaluation < minEval) {
+                    minEval = evaluation;
+                }
+                beta = Math.min(beta, evaluation);
                 if (beta <= alpha) break;
             }
             return minEval;
